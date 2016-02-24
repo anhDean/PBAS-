@@ -118,8 +118,8 @@ void MainLoop::defineVideoParamters()
 			rThreshScale.push_back(5.0);
 			rIncDecFac.push_back(0.05);
 			//T-thresh
-			decreasingRateScale.push_back(1.0);
-			increasingRateScale.push_back(0.05);
+			decreasingRateScale.push_back(0.05);
+			increasingRateScale.push_back(1.0);
 			lowerTimeUpdateRateBoundary.push_back(2);
 			upperTimeUpdateRateBoundary.push_back(200);
 			

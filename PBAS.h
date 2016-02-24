@@ -1,6 +1,14 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 
+struct PBASFeature
+{
+	cv::Mat gradMag, gradAngle, pxIntensity;
+	void free() {
+		gradMag.release(); gradAngle.release(); pxIntensity.release();
+	}
+};
+
 class PBAS
 {
 public:
@@ -24,8 +32,9 @@ private:
 	void createRandomNumberArray();
 	void checkXY(cv::Point2i*);
 	void getFeatures(std::vector<cv::Mat>* descriptor, cv::Mat* intImg);
-	
-	bool isMovement;
+	void updateThreshold();
+	static void deallocMem(cv::Mat *mat);
+	bool isMovement; // boolean to mark foreground/backg pixel
 	double beta, alpha, constBackground, constForeground;
 	
 	//####################################################################################
@@ -40,21 +49,21 @@ private:
 	// radius of the sphere -> lower border boundary
 	double R;
 	// scale for the sphere threshhold to define pixel-based Thresholds
-	double rThreshScale;
+	double rThreshScale; // R_scale
 	// increasing/decreasing factor for the r-Threshold based on the result of rTreshScale * meanMinDistBackground
-	double rIncDecFac;
-	cv::Mat sumThreshBack, rThresh; //arrays
-	float *sumArrayDistBack; //sum of minDistBackground ->pointer to arrays
+	double rIncDecFac;	// R_inc/dec
+	cv::Mat sumThreshBack, rThresh; //map of sum over dmin and of rThresholds
+	float *sumArrayDistBack; //sum of dmin over moving average window (but noi average) minDistBackground ->pointer to arrays
 	float *rData; //new pixel-based r-threshhold -> pointer to arrays
 	//#####################################################################################
 	//####################################################################################
 	// Defining the number of background-model-images, which have a lowerDIstance to the current Image than defined by the R-Thresholds, that are necessary
 	// to decide that this pixel is background
-	int parts;
+	int parts; // #min
 	//#####################################################################################
 	//####################################################################################
 	// Initialize the background-model update rate 
-	int nrSubsampling;
+	int nrSubsampling; // 1/T
 
 	// scale that defines the increasing of the update rate of the background model, if the current pixel is background 
 	//--> more frequently updates if pixel is background because, there shouln't be any change
@@ -63,7 +72,7 @@ private:
 	// at all
 	int upperTimeUpdateRateBoundary;	
 	//holds update rate of current pixel
-	cv::Mat tempCoeff;
+	cv::Mat tempCoeff; // 1/T(xi)
 	float *tCoeff;
 	// opposite scale to increasingRateScale, for decreasing the update rate of the background model, if the current pixel is foreground
 	//--> Thesis: Our Foreground is a real moving object -> thus the background-model is good, so don't update it
@@ -76,9 +85,9 @@ private:
 	cv::Mat* segMap;
 
 	// background and foreground identifiers
-	int foreground, background;
+	int foreground, background; // identifiers if background or foreground
 
-	int height, width;
+	int height, width;	// hieght, width of frame
 
 	//random number generator
 	cv::RNG randomGenerator;
@@ -87,8 +96,8 @@ private:
 	std::vector<int> randomSubSampling,	randomN, randomX, randomY,randomDist;
 	int runs,countOfRandomNumb;
 
-	uchar* data, *segData;
-	float* dataBriefNorm, *dataBriefDir;
+	uchar* data, *segRowData;
+	float* dataBriefNorm, *dataBriefDir; // hold row of current image feature matrix
 	uchar* dataBriefCol;
 	uchar* dataStats;
 
@@ -96,24 +105,24 @@ private:
 	std::vector<uchar*>backgroundPtBriefCol;
 	std::vector<float*> backgroundPtBriefNorm, backgroundPtBriefDir;
 	
-	std::vector<std::vector<cv::Mat>> backGroundFeatures;
+	std::vector<std::vector<cv::Mat>> backGroundFeatures; // each feature at time t consists of 3 matrices -> vector for time vector for matrices
 
-	std::vector<cv::Mat> temp, imgFeatures;
+	std::vector<cv::Mat> temp, imgFeatures; // temp: hold temporary image features (3 matrices)
 
 	//cv::ORB orb;
 	//std::vector<cv::KeyPoint> keypoints1;
 	//cv::Mat descr1;
-	int xNeigh, yNeigh;
-	float meanDistBack;
-	double formerMaxNorm, formerMaxPixVal,formerMaxDir;
+	int xNeigh, yNeigh;	// x,y coordinate of neighbor
+	float meanDistBack; // mean(d_min)
+	double formerMaxNorm, formerMaxPixVal,formerMaxDir; // formerMaxNorm: average gardient magnitude of last frame
 
 	//new background distance model
-	std::vector<float*> distanceStatPtBack;/*,distanceStatPtFore;*/
+	std::vector<float*> distanceStatPtBack; // vector of dmin values
 	std::vector<cv::Mat*> distanceStatisticBack; /*,distanceStatisticFore;*/	
 	
 	float formerDistanceFore,formerDistanceBack;
 	cv::Mat* tempDist,* tempDistB;
 	double setR;
-	cv::Mat sobelX, sobelY;
+	cv::Mat sobelX, sobelY; // matrices to perfom filtering -> get gradmagnitude
 
 };
