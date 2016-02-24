@@ -1,13 +1,11 @@
 #pragma once
 #include <opencv2/opencv.hpp>
+#include "PBASFeature.h"
 
-struct PBASFeature
-{
-	cv::Mat gradMag, gradAngle, pxIntensity;
-	void free() {
-		gradMag.release(); gradAngle.release(); pxIntensity.release();
-	}
-};
+
+
+
+
 
 class PBAS
 {
@@ -31,7 +29,7 @@ private:
 	void checkValid(int *x, int *y);
 	void createRandomNumberArray();
 	void checkXY(cv::Point2i*);
-	void getFeatures(std::vector<cv::Mat>* descriptor, cv::Mat* intImg);
+	void getFeatures(PBASFeature& descriptor, cv::Mat* intImg);
 	void updateThreshold();
 	static void deallocMem(cv::Mat *mat);
 	bool isMovement; // boolean to mark foreground/backg pixel
@@ -105,9 +103,9 @@ private:
 	std::vector<uchar*>backgroundPtBriefCol;
 	std::vector<float*> backgroundPtBriefNorm, backgroundPtBriefDir;
 	
-	std::vector<std::vector<cv::Mat>> backGroundFeatures; // each feature at time t consists of 3 matrices -> vector for time vector for matrices
+	std::vector<PBASFeature> backGroundFeatures; // each feature at time t consists of 3 matrices -> vector for time vector for matrices
 
-	std::vector<cv::Mat> temp, imgFeatures; // temp: hold temporary image features (3 matrices)
+	PBASFeature temp, imgFeatures; // temp: hold temporary image features (3 matrices)
 
 	//cv::ORB orb;
 	//std::vector<cv::KeyPoint> keypoints1;

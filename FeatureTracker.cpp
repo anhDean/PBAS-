@@ -20,7 +20,6 @@ FeatureTracker::FeatureTracker(VideoProcessor *vp, double resPara,
 
 	//shadow detection
 
-
 }
 
 FeatureTracker::~FeatureTracker(void)
@@ -84,7 +83,7 @@ void FeatureTracker::parallelBackgroundAveraging(PBAS* m_pbas1, PBAS* m_pbas2, P
 	//just or all foreground results of each rgb channel
 	cv::bitwise_or(pbasResult1, pbasResult3, pbasResult1);
 	cv::bitwise_or(pbasResult1, pbasResult2, pbasResult1);
-	
+	cv::medianBlur(pbasResult1, pbasResult1, 9);
 	pbasResult1.copyTo(*pbasR);
 	
 	pbasResult2.release();
