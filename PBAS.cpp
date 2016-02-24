@@ -50,14 +50,14 @@ PBAS::~PBAS(void)
 			if(~distanceStatisticBack.at(i)->empty())
 				distanceStatisticBack.at(i)->release();
 		
-			if(~backGroundFeatures.at(i).at(0).empty())
-				backGroundFeatures.at(i).at(0).release();
+			if(~backGroundFeatures.at(i).gradMag.empty())
+				backGroundFeatures.at(i).gradMag.release();
 		
-			if(~backGroundFeatures.at(i).at(1).empty())
-				backGroundFeatures.at(i).at(1).release();
+			if(~backGroundFeatures.at(i).gradAngle.empty())
+				backGroundFeatures.at(i).gradAngle.release();
 		
-			if(~backGroundFeatures.at(i).at(2).empty())
-				backGroundFeatures.at(i).at(2).release();
+			if(~backGroundFeatures.at(i).pxIntensity.empty())
+				backGroundFeatures.at(i).pxIntensity.release();
 		}
 		std::cout << " after rel " << std::endl;
 		std::for_each(distanceStatisticBack.begin(), distanceStatisticBack.begin(), deallocMem); // deallocate memory for each allocated mat object
@@ -120,7 +120,7 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 		// if runs < N collect background features without updating the model
 	{
 		
-		getFeatures(&temp, &blurImage);
+		getFeatures(temp, &blurImage);
 		backGroundFeatures.push_back(temp);
 
 		tempDistB = new cv::Mat(blurImage.size(), CV_32FC1);
@@ -148,11 +148,9 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 		++runs;
 	}
 
-
-
 	segMap = new cv::Mat(blurImage.rows,blurImage.cols,blurImage.type());
 	//calc features of current image
-	getFeatures(&imgFeatures, &blurImage);
+	getFeatures(imgFeatures, &blurImage);
 	double sumDist = 0.0;
 	// variables to generate old average of gradient magnitude
 	double maxNorm = 0.0;
@@ -164,9 +162,9 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 	{
 		segRowData = segMap->ptr<uchar>(j); // j-th row of segmentation map
 		// get current image features, rows
-		dataBriefNorm = imgFeatures.at(0).ptr<float>(j); // gradmagn
-		dataBriefDir  = imgFeatures.at(1).ptr<float>(j);  // grad dir
-		dataBriefCol  = imgFeatures.at(2).ptr<uchar>(j); // pixel intensity
+		dataBriefNorm = imgFeatures.gradMag.ptr<float>(j); // gradmagn
+		dataBriefDir  = imgFeatures.gradAngle.ptr<float>(j);  // grad dir
+		dataBriefCol  = imgFeatures.pxIntensity.ptr<uchar>(j); // pixel intensity
 
 		sumArrayDistBack = sumThreshBack.ptr<float>(j); // sum(dmin)
 		rData = rThresh.ptr<float>(j);
@@ -189,9 +187,9 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 		for(int k = 0; k < runs; ++k)
 		{
 			// get history of feature values up to N
-			backgroundPtBriefNorm.push_back(backGroundFeatures.at(k).at(0).ptr<float>(j));
-			backgroundPtBriefDir.push_back(backGroundFeatures.at(k).at(1).ptr<float>(j));
-			backgroundPtBriefCol.push_back(backGroundFeatures.at(k).at(2).ptr<uchar>(j));
+			backgroundPtBriefNorm.push_back(backGroundFeatures.at(k).gradMag.ptr<float>(j));
+			backgroundPtBriefDir.push_back(backGroundFeatures.at(k).gradAngle.ptr<float>(j));
+			backgroundPtBriefCol.push_back(backGroundFeatures.at(k).pxIntensity.ptr<uchar>(j));
 			distanceStatPtBack.push_back(distanceStatisticBack.at(k)->ptr<float>(j));
 		}
 
@@ -281,9 +279,9 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 
 						// replace randomly chosen sample
 						rand = randomN.at(entry-1); 
-						(backGroundFeatures.at(rand)).at(0).at<float>(yNeigh,xNeigh) = imgFeatures.at(0).at<float>(yNeigh,xNeigh);
-						(backGroundFeatures.at(rand)).at(1).at<float>(yNeigh,xNeigh) = imgFeatures.at(1).at<float>(yNeigh,xNeigh);
-						(backGroundFeatures.at(rand)).at(2).at<uchar>(yNeigh,xNeigh) = imgFeatures.at(2).at<uchar>(yNeigh,xNeigh);
+						(backGroundFeatures.at(rand)).gradMag.at<float>(yNeigh,xNeigh) = imgFeatures.gradMag.at<float>(yNeigh,xNeigh);
+						(backGroundFeatures.at(rand)).gradAngle.at<float>(yNeigh,xNeigh) = imgFeatures.gradAngle.at<float>(yNeigh,xNeigh);
+						(backGroundFeatures.at(rand)).pxIntensity.at<uchar>(yNeigh,xNeigh) = imgFeatures.pxIntensity.at<uchar>(yNeigh,xNeigh);
 					}
 				}
 
@@ -327,9 +325,7 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 	segMap->copyTo(*output);
 
 	delete segMap;
-	imgFeatures.at(0).release();
-	imgFeatures.at(1).release();
-	imgFeatures.at(2).release();
+	imgFeatures.free();
 	blurImage.release();
 	return true;
 }
@@ -439,12 +435,9 @@ void PBAS::checkValid(int *x, int *y)
 	}	
 }
 
-void PBAS::getFeatures(std::vector<cv::Mat>* descriptor, cv::Mat* intImg)
+void PBAS::getFeatures(PBASFeature& descriptor, cv::Mat* intImg)
 {
-	// features: gradient magnitude and direction and pixel intensities
-	if(!descriptor->empty())
-		descriptor->clear();
-	
+	// features: gradient magnitude and direction and pixel intensities	
 	cv::Sobel(*intImg,sobelX,CV_32F, 1, 0, 3, 1, 0.0); // get gradient magnitude for dx
 	cv::Sobel(*intImg,sobelY,CV_32F, 0, 1, 3, 1, 0.0); // get gradient magnitude for dy
 	
@@ -455,11 +448,8 @@ void PBAS::getFeatures(std::vector<cv::Mat>* descriptor, cv::Mat* intImg)
 	//first  matrix: magnitude
 	//second matrix: direction
 	// third matrix: gray image, intensity
-	descriptor->push_back(tmp_feat.gradMag);
-	descriptor->push_back(tmp_feat.gradAngle);
-	
 	intImg->copyTo(tmp_feat.pxIntensity);
-	descriptor->push_back(tmp_feat.pxIntensity);
+	descriptor= tmp_feat; // deep copy
 }
 
 inline void PBAS::deallocMem(cv::Mat * mat) { delete mat;}
