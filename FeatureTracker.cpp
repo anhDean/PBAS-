@@ -1,25 +1,17 @@
-#include "StdAfx.h"
 #include "FeatureTracker.h"
 
-
-
-FeatureTracker::FeatureTracker(VideoProcessor *vp, double resPara,
+FeatureTracker::FeatureTracker(double resPara,
 							   int newN, double newR, int newRaute, int newTemporal, //const for pbas
 							   double rT, double rID, double iTS, double dTS, int dTRS, int iTRS, //const for pbas
 							   double newA, double newB, double newCF, double newCB) // double newLabelThresh, int newNeighbour) //const for graphCuts
 
 {
-	this->vp = vp;
-	
 	//create a pbas-regulator for every rgb channel
 	m_pbas1.initialization(newN,newR,newRaute,newTemporal,newA,newB, newCF, newCB, rT, rID, iTS, dTS, dTRS,iTRS);
 	m_pbas2.initialization(newN,newR,newRaute,newTemporal,newA,newB, newCF, newCB, rT, rID, iTS, dTS, dTRS,iTRS);
 	m_pbas3.initialization(newN,newR,newRaute,newTemporal,newA,newB, newCF, newCB, rT, rID, iTS, dTS, dTRS,iTRS);
 
 	m_resizeParam = resPara;
-
-	//shadow detection
-
 }
 
 FeatureTracker::~FeatureTracker(void)
@@ -32,15 +24,11 @@ void FeatureTracker::process(cv:: Mat &frame, cv:: Mat &output)
 		//###################################
 		//PRE-PROCESSING
 		//check if bluring is necessary or beneficial at this point
-		
 		cv::Mat blurImage;
 		cv::GaussianBlur(frame, blurImage, cv::Size(3,3), 3);
-
 		//maybe use a bilateralFilter
 		//cv::bilateralFilter(frame, blurImage, 5, 15, 15);
 		//###################################
-
-
 		//color image
 		std::vector<cv::Mat> rgbChannels(3);
 		cv::split(blurImage, rgbChannels);
@@ -50,7 +38,6 @@ void FeatureTracker::process(cv:: Mat &frame, cv:: Mat &output)
 		rgbChannels.at(1).release();
 		rgbChannels.at(2).release();
 		rgbChannels.clear();
-
 		//###############################################
 		//POST-PROCESSING HERE
 		//for the final results in the changedetection-challenge a 9x9 median filter has been applied
@@ -62,7 +49,7 @@ void FeatureTracker::process(cv:: Mat &frame, cv:: Mat &output)
 
 }
 
-void FeatureTracker::parallelBackgroundAveraging(PBAS* m_pbas1, PBAS* m_pbas2, PBAS* m_pbas3, std::vector<cv::Mat>* rgb,  bool wGC,cv::Mat * pbasR)
+void FeatureTracker::parallelBackgroundAveraging(PBAS* m_pbas1, PBAS* m_pbas2, PBAS* m_pbas3, std::vector<cv::Mat>* rgb,  bool wGC,cv::Mat * pbasR) const
 {	
 	cv::Mat pbasResult1, pbasResult2, pbasResult3;
 
