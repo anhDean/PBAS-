@@ -66,19 +66,16 @@ void FeatureTracker::parallelBackgroundAveraging(PBAS* m_pbas1, PBAS* m_pbas2, P
 {	
 	cv::Mat pbasResult1, pbasResult2, pbasResult3;
 
-	//use parallel computing for speed improvements, but higher cpu-workload
-	m_tg.run([m_pbas1, rgb, &pbasResult1](){
-		m_pbas1->process(&rgb->at(0), &pbasResult1);
-	});
+	std::thread t1(&PBAS::process, m_pbas1, &rgb->at(0), &pbasResult1);
+	std::thread t2(&PBAS::process, m_pbas2, &rgb->at(1), &pbasResult2);
+	std::thread t3(&PBAS::process, m_pbas3, &rgb->at(2), &pbasResult3);
 
-	m_tg.run([m_pbas2, rgb, &pbasResult2](){
-			m_pbas2->process(&rgb->at(1), &pbasResult2);
-	});
-
-	m_tg.run_and_wait([m_pbas3, rgb, &pbasResult3](){
-			m_pbas3->process(&rgb->at(2), &pbasResult3);
-	});
-	
+	if (t1.joinable())
+		t1.join();
+	if (t2.joinable())
+		t2.join();
+	if (t3.joinable())
+		t3.join();
 
 	//just or all foreground results of each rgb channel
 	cv::bitwise_or(pbasResult1, pbasResult3, pbasResult1);
@@ -89,6 +86,11 @@ void FeatureTracker::parallelBackgroundAveraging(PBAS* m_pbas1, PBAS* m_pbas2, P
 	pbasResult2.release();
 	pbasResult3.release();
 	pbasResult1.release();
+
+	t1.~thread();
+	t2.~thread();
+	t3.~thread();
+
 }
 
 void FeatureTracker::process(cv::Mat &)

@@ -4,9 +4,8 @@
 class FrameProcessor
 {
 public:
-	FrameProcessor(void){};
-	~FrameProcessor(void){};
-	
+	FrameProcessor(){};
+	~FrameProcessor(){};	
 	// processing method
 	virtual void process(cv:: Mat &input, cv:: Mat &output)= 0;	
 	virtual void process(cv:: Mat &input)= 0;	

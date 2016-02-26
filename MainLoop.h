@@ -2,6 +2,8 @@
 #include "VideoProcessor.h"
 #include "FeatureTracker.h"
 #include <string>
+#include <ppl.h>
+#include <windows.h>
 
 class MainLoop
 {
