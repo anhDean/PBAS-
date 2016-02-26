@@ -6,127 +6,91 @@
 
 class VideoProcessor
 {
-public:
-	VideoProcessor() : callIt(true), delay(0),
-		fnumber(0), stop(false), frameToStop(-1) {}
+private:
+	// a bool to determine if the
+	// process callback will be called
+	bool m_callIt, m_stop;
+	// Input display window name
+	mutable std::string m_windowNameInput,m_windowNameOutput;
+	// Output display window name
+	//WRITE VIDEO
 
-	~VideoProcessor(void);
+	cv::VideoWriter m_writer; // the OpenCV video writer object
+	std::string m_outputFile; // output filename
+	std::string m_extension; // extension of output images
+	int m_currentIndex; // current index for output images
+	int m_digits; // number of digits in output image filename
+
+	// delay between each frame processing
+	int m_delay;
+	// number of processed frames
+	long m_fnumber, m_frameToStop;
+	// the OpenCV video capture object
+	cv::VideoCapture m_capture;
+	// foreground binary image
+	cv::Mat m_foreground, m_objectImage;
+	cv::Size m_frameSize;
 	
-	// set the callback function that
-	// will be called for each frame
-	void setFrameProcessor(void (*frameProcessingCallback)(cv::Mat&, cv::Mat&));
-	void setFrameProcessor(FrameProcessor* frameProcessorPtr);
+	std::vector<std::string> m_images; // vector of image filename to be used as input
+	std::vector<std::string>::const_iterator m_itImg; // image vector iterator
 
-	// set the name of the video file
-	bool setInput(std::string);
-	bool setInput(const std::vector<std::string>& imgs);
 
-	// to display the processed frames
-	void displayInput(std::string);
-	// to display the processed frames
-	void displayOutput(std::string) ;
-	// do not display the processed frames
-	void dontDisplay();
+	// member functions
+	bool readNextFrame(cv::Mat&); // could be: video file or camera
+	// process callback to be called
 
-	// to grab (and process) the frames of the sequence
-	void run();
+	// stop at this frame number
+	// to stop the processing
+	void writeNextFrame(cv::Mat&);
+	const cv::Size & getFrameSize() const;
 
-	// Stop the processing
-	void stopIt();
+	
 
-	// Is the process stopped?
-	bool isStopped();
+public:
 
-	// Is a capture device opened?
-	bool isOpened();
-
-	double getFrameRate();
-
+	VideoProcessor(const std::string &filename);
+	VideoProcessor::VideoProcessor(const std::vector<std::string>& imgs);
+	~VideoProcessor(void);
 	// set a delay between each frame
 	// 0 means wait at each frame
 	// negative means no delay
 	void setDelay(int);
-
-	// return the frame number of the next frame
-	long getFrameNumber();
-	long getTotalNumberOfFrames();
-
+	int getCodec(char[4]);
+	void(*process)(cv::Mat&, cv::Mat&);
+	FrameProcessor* m_frameProcessor;
 	// the callback function to be called
 	// for the processing of each frame
-	void (*process)(cv::Mat&, cv::Mat&);
-	FrameProcessor* frameProcessor;
 	void stopAtFrameNo(long);
 
-	bool setOutput(std::string, int, double, bool);
-	bool setOutput(std::string, const std::string&, int,int);
-	int getCodec(char[4]);
-
-private:
-	// The Mixture of Gaussian object
-	// used with all default parameters
-
-	// foreground binary image
-	cv::Mat foreground, objectImage;
-	std::vector<std::vector<cv::Point>> contours;
-
-	std::vector<cv::Point> massCenter;
+	// set the callback function that
+	// will be called for each frame
 	
-	//own objects
-	//ObjectInteraction oi;
 
-	// to get the next frame
-	// could be: video file or camera
-	bool readNextFrame(cv::Mat&);
+	// setters
+	// set the name of the video file
+	//bool init(const std::string&);
+	//bool init(const std::vector<std::string>& imgs);
+	void setFrameProcessor(void(*frameProcessingCallback)(cv::Mat&, cv::Mat&));
+	void setFrameProcessor(FrameProcessor* frameProcessorPtr);
+	bool setOutput(std::string filename, int, double, bool);
+	bool setOutput(std::string filename, const std::string& ext, int numberOfDigits = 3, int startIndex = 0);
+	void setStop(); // Stop the processing
+	void setCallProcess();
+	void unsetCallProcess(); // do not call process callback
+	// getters
+	double getFrameRate() const; 	
+	long getFrameNumber() const; // return the frame number of the next frame
+	long getTotalNumberOfFrames() const;
 
-	// process callback to be called
-	void callProcess();
-
-	// do not call process callback
-	void dontCallProcess();
-
-
+	// logical query
+	bool isStopped(); // Is the process stopped?
+	bool isOpened(); // Is a capture device opened?
 	
-	// the OpenCV video capture object
-	cv::VideoCapture capture;
+	// display
+	void displayInput(const std::string& windowName) const;// to display the processed frames
+	void displayOutput(const std::string& windowName) const; // to display the processed frames
+	void stopDisplay() const;  // do not display the processed frames
 
-	// a bool to determine if the
-	// process callback will be called
-	bool callIt;
-	// Input display window name
-	std::string windowNameInput;
-	// Output display window name
-	std::string windowNameOutput;
-	// delay between each frame processing
-	int delay;
-	// number of processed frames
-	long fnumber;
-	// stop at this frame number
-	long frameToStop;
-	// to stop the processing
-	bool stop;
-/*###################################################################################################################*/
-/*Image Sequence*/
-/*###################################################################################################################*/
-	// vector of image filename to be used as input
-	std::vector<std::string> images;
-	// image vector iterator
-	std::vector<std::string>::const_iterator itImg;
+	void run(); // to grab (and process) the frames of the sequence
 
-/*###################################################################################################################*/
-	/*WRITE VIDEO*/
-/*###################################################################################################################*/
-	// the OpenCV video writer object
-	cv::VideoWriter writer;
-	// output filename
-	std::string outputFile;
-	// current index for output images
-	int currentIndex;
-	// number of digits in output image filename
-	int digits;
-	// extension of output images
-	std::string extension;
-	void writeNextFrame(cv::Mat&);
-
-	cv::Size getFrameSize();
-	cv::Size frameSize;
 };

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "PBAS.h"
 #include "LBSP.h"
 
@@ -112,7 +111,6 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 	height = input->rows;
 	width = input->cols;
 	isMovement = false;
-	LBSP t(input->clone(), 0.3);
 	assert(input->type() == CV_8UC1);
 	//cv::Mat blurImage(input->rows, input->cols, CV_8UC1, input->data);
 	cv::Mat blurImage = input->clone();

@@ -12,7 +12,7 @@ class PBAS
 public:
 	PBAS(void);
 	~PBAS(void);
-
+	//PBAS::PBAS(int newN, double newR, int newParts, int newNrSubSampling, double a, double b, double cf, double cb, double rThrSc, double rIndDec, double incrTR, double decrTR, int lowerTB, int upperTB)
 	bool process(cv::Mat *input, cv::Mat*);
 	void initialization(int newN, double newR, int newParts, int newNrSubSampling, double a, double b, double cf, double cb, double rThrSc, double rIndDec, double incrTR, double decrTR, int lowerTB, int upperTB);
 	void setConstForeground(double constF);

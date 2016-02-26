@@ -1,9 +1,5 @@
-
-
-#include "StdAfx.h"
 #include "MainLoop.h"
 #include <iomanip>
-#include "LBSP.h"
 
 
 MainLoop::MainLoop(void)
@@ -50,10 +46,10 @@ void MainLoop::startVideoProcessing()
 			}
 			path += "/bin";
 
-			processor = new VideoProcessor;
+			VideoProcessor* processor = new VideoProcessor(imgString.at(actualVideo));
 
 			// Create feature tracker instance
-			tracker = new FeatureTracker(processor,  resParam.at(actualVideo),
+			FeatureTracker* tracker = new FeatureTracker(resParam.at(actualVideo),
 				newN.at(actualParam), newR.at(actualParam), newRaute.at(actualParam), newTemporal.at(actualParam), //const PBAS
 				rThreshScale.at(actualParam), rIncDecFac.at(actualParam), increasingRateScale.at(actualParam), decreasingRateScale.at(actualParam), lowerTimeUpdateRateBoundary.at(actualParam), //const PBAS
 				upperTimeUpdateRateBoundary.at(actualParam),//const PBAS
@@ -61,7 +57,6 @@ void MainLoop::startVideoProcessing()
 
 
 			//ChangeDetection
-			processor->setInput(imgString.at(actualVideo));
 			std::cout << "output path: " << path << std::endl;
 			processor->setOutput(path, ".png", 6, 1);
 
@@ -91,8 +86,8 @@ void MainLoop::startVideoProcessing()
 
 void MainLoop::defineVideoParamters()
 {
-	numberOfParams = 16;
-	numberOfVideos = 32; 
+	m_nParams = 16;
+	m_nVideos = 32; 
 	
 	//define the basic result directory, the algorithm creates the necessary subfolders for the changedetection database
 	std::string result = "E:/PBAS/result_hp_version/";
@@ -152,7 +147,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 			}
@@ -169,7 +164,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 			}
@@ -185,7 +180,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
@@ -202,7 +197,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 			}
@@ -221,7 +216,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -238,7 +233,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -255,7 +250,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -272,7 +267,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -292,7 +287,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -309,7 +304,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -326,7 +321,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -343,7 +338,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -360,7 +355,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -377,7 +372,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -397,7 +392,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -414,7 +409,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -431,7 +426,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -448,7 +443,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -465,7 +460,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -482,7 +477,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -501,7 +496,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -518,7 +513,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -535,7 +530,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -552,7 +547,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -569,7 +564,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -586,7 +581,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -606,7 +601,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -623,7 +618,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -640,7 +635,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -657,7 +652,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -674,7 +669,7 @@ void MainLoop::defineVideoParamters()
 				resParam.push_back(1.0);
 
 				//graphCuts Const
-				useGraphCuts.push_back(false);
+				
 				newConstForeground.push_back(2.0);
 				newConstBackground.push_back(1.0);
 				
@@ -758,13 +753,14 @@ std::vector<std::string> MainLoop::setImageString(std::string base, int totalNum
 {
 	std::vector<std::string> tempString;
 	std::string temp, ext = ".jpg";
+	int fillVal = 6;
 
 	for(int i = 1; i < totalNumberOfImages; ++i)
 	{
 		std::stringstream nr;
 		temp = base;
 
-		nr << std::setw(6) << std::setfill('0') << i << std::setfill(' ');
+		nr << std::setw(fillVal) << std::setfill('0') << i << std::setfill(' ');
 		temp += nr.str() + ext;
 		tempString.push_back(temp);
 		temp.clear();
