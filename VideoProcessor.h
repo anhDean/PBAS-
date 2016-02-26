@@ -4,8 +4,6 @@
 #include <iostream>
 #include <iomanip>
 
-class FrameProcessor;
-
 class VideoProcessor
 {
 public:
@@ -66,8 +64,6 @@ public:
 private:
 	// The Mixture of Gaussian object
 	// used with all default parameters
-	cv::BackgroundSubtractorMOG mog;
-	cv::BackgroundSubtractorMOG2 mog2;
 
 	// foreground binary image
 	cv::Mat foreground, objectImage;

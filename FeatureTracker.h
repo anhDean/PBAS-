@@ -3,9 +3,7 @@
 #include "FrameProcessor.h"
 #include "VideoProcessor.h"
 #include "PBAS.h"
-#include <ppl.h>
-#include <windows.h>
-
+#include <thread>
 
 class FeatureTracker : public FrameProcessor  
 
@@ -30,6 +28,5 @@ private:
 	int m_resizeParam;
 	cv::Mat m_pbasResult;
 	
-	Concurrency::task_group m_tg;
 
 };
