@@ -15,8 +15,8 @@
 #endif
 #endif
 
-typedef std::vector<bool> BinaryStr;
-typedef typename std::vector<BinaryStr>::iterator BinaryStrItr;
+typedef std::vector<bool> BinaryStr; // TODO: make binarystr to struct with reference value
+
 
 
 class LBSP
@@ -32,13 +32,15 @@ private:
 	static const std::vector<int> LBSP_PATTERN_ORDER_Y;
 	// member funtions
 	BinaryStr calcLBSPXY(const cv::Mat &im, const int &x, const int &y) const; // calculates LBSP at given x,y coordinate
-	void setLBSPArray(const cv::Mat &input); // calculates LBSParray and writes into member 
+	
 
 public:
 	//constructor, destructor
 	LBSP();
-	LBSP::LBSP(const LBSP& input);
+	LBSP(const LBSP& input); // copy constructor
+	LBSP& operator=(const LBSP& b); // assignment operator
 	LBSP(const cv::Mat& input, const float& thresh = 0.3); // constructor: generates matrix of LBSP pattern
+	void init(const cv::Mat& input);
 	~LBSP();
 	// getters
 	const int& getCols() const;
@@ -48,10 +50,14 @@ public:
 	// setters
 	void setThreshold(const float& newVal);
 	void setLBSPArray(const std::vector<BinaryStr>& lbsp_array);
-	//operators
-	LBSP operator-(const LBSP& b) const; // returns inter-frame binary string (difference between two binary strings)
+	void setLBSPArray(const cv::Mat &input); // calculates LBSParray and writes into member 
+	// display function
 	void displayLBSPXY(const int &x, const int &y) const;
 
+
+	//TODO: updatelbsp(frame_old, frame_new)
+	//TODO: calcinterframeLBSPXY
+	//TODO: make descriptor (reference value + signature)
 
 	//static member functions
 	static cv::Mat calcLBSPArrayDiff(const LBSP&a, const LBSP &b); // returns hammingweight array of difference of two LBSP instances

@@ -4,37 +4,48 @@ const std::vector<int> LBSP::LBSP_PATTERN_ORDER_X = { 0, 2, 4, 1, 2, 3, 0, 1, 3,
 const std::vector<int> LBSP::LBSP_PATTERN_ORDER_Y = { 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4 }; // Y-Coordinate order for LBSP processing
 const int LBSP::LBSP_NUM = 16;
 
-
 LBSP::LBSP()
 {
 
 }
-
 LBSP::LBSP(const cv::Mat& input, const float& thresh) : m_nRows(input.rows), m_nCols(input.cols), m_thresh(thresh), m_LBSPArray(input.rows * input.cols)
 {
 
 	CV_Assert(input.type() == CV_8UC1 || input.type() == CV_8UC3);
 	setLBSPArray(input);
 }
-
-LBSP::LBSP(const LBSP& input) : m_nRows(input.m_nRows), m_nCols(input.m_nCols), m_thresh(m_thresh), m_LBSPArray(input.m_nCols* input.m_nRows)
+LBSP::LBSP(const LBSP& input) : m_nRows(input.m_nRows), m_nCols(input.m_nCols), m_thresh(input.m_thresh), m_LBSPArray(input.m_nCols* input.m_nRows)
 {
 	setLBSPArray(input.m_LBSPArray);
 }
+void LBSP::init(const cv::Mat& input)
+{
+	
+	CV_Assert(input.type() == CV_8UC1 || input.type() == CV_8UC3);
+	if (!m_LBSPArray.empty()) m_LBSPArray.clear();
+	m_thresh = 0.3;
+	m_nCols = input.cols;
+	m_nRows = input.rows;
+	m_LBSPArray.resize(m_nCols * m_nRows);
+	setLBSPArray(input);
 
+}
+LBSP& LBSP::operator=(const LBSP& b) // returns matrix (in vector representation) of inter-frame LBSP
+{
+	if (this != &b)
+	{
+		m_LBSPArray.clear();
+		m_nRows = b.m_nRows;
+		m_nCols = b.m_nCols;
+		m_thresh = b.m_thresh;
+		setLBSPArray(b.m_LBSPArray);
+	}
+	return *this;
+}
 LBSP::~LBSP()
 {
 	m_LBSPArray.clear();
 }
-
-LBSP LBSP::operator-(const LBSP& b) const // returns matrix (in vector representation) of inter-frame LBSP
-{
-	//TODO: subtraction of two LBSP arrays (bitwise XOR)
-	LBSP result(*this);
-	result.setLBSPArray(calcLBSPArrayDiff(*this, b));
-	return result;
-}
-
 // setters
 void LBSP::setLBSPArray(const std::vector<BinaryStr>& lbsp_array)
 {
@@ -46,8 +57,9 @@ void LBSP::setLBSPArray(const std::vector<BinaryStr>& lbsp_array)
 	}
 }
 void LBSP::setLBSPArray(const cv::Mat &input)
-{
-	CV_Assert((input.type() == CV_8UC1 || input.type() == (CV_8UC3)) && m_LBSPArray.size() == m_nCols * m_nRows);
+{	
+
+	CV_Assert((input.type() == CV_8UC1) || (input.type() == (CV_8UC3)) && input.rows == m_nRows && input.cols == m_nCols && m_LBSPArray.size() == m_nCols * m_nRows);
 
 	// pad image to get safe patches
 	cv::Mat padded_input = padMat(input);
@@ -61,11 +73,10 @@ void LBSP::setLBSPArray(const cv::Mat &input)
 	}
 
 }
-
 BinaryStr LBSP::calcLBSPXY(const cv::Mat &im, const int &x, const int &y) const
 {
 	const int padding = 2, centerX = 2, centerY = 2; // assume 5x5 patches
-	CV_Assert((im.type() == CV_8UC1 || im.type() == CV_8UC3) && m_nCols + 2 * (padding == im.cols && m_nRows + 2 * padding == im.rows)); // assume padding
+	CV_Assert((im.type() == CV_8UC1 || im.type() == CV_8UC3) && (m_nCols + 2 * padding == im.cols)  && (m_nRows + 2 * padding == im.rows)); // assume padding
 
 	bool tmp;
 	BinaryStr out;
@@ -100,14 +111,10 @@ BinaryStr LBSP::calcLBSPXY(const cv::Mat &im, const int &x, const int &y) const
 
 	return out;
 }
-
-
 void LBSP::setThreshold(const float& newVal)
 {
 	m_thresh = newVal;
 }
-
-
 // getters
 const BinaryStr& LBSP::getLBSPXY(const int& x, const int&y) const // returns binary string struct at position X (col),Y (row)
 {
@@ -126,7 +133,6 @@ const int& LBSP::getCols() const
 {
 	return m_nCols;
 }
-
 // display functions
 void LBSP::displayLBSPXY(const int &x, const int &y) const {
 
@@ -136,7 +142,6 @@ void LBSP::displayLBSPXY(const int &x, const int &y) const {
 	}
 	std::cout << std::endl;
 }
-
 // static member functions
 cv::Mat LBSP::calcLBSPArrayDiff(const LBSP&a, const LBSP &b) // returns hammingweight array of bitwise xored lbsp arrays 
 {
@@ -155,7 +160,6 @@ cv::Mat LBSP::calcLBSPArrayDiff(const LBSP&a, const LBSP &b) // returns hammingw
 	LBSP2HWArray(tmp, aRows, aCols).copyTo(result);
 	return result;
 }
-
 cv::Mat LBSP::LBSP2HWArray(const std::vector<BinaryStr>&a, int rows, int cols)
 {
 	CV_Assert(a.size() == rows * cols);
@@ -177,14 +181,12 @@ cv::Mat LBSP::LBSP2HWArray(const std::vector<BinaryStr>&a, int rows, int cols)
 	}
 	return out;
 }
-
 void LBSP::displayLBSP(const BinaryStr &x) {
 	for (int i = 0; i< x.size(); ++i) {
 		std::cout << x.at(i);
 	}
 	std::cout << std::endl;
 }
-
 void LBSP::displayLBSPPatch(const BinaryStr &x) {
 	cv::Mat out(5, 5, CV_8UC1, cv::Scalar(0));
 	for (int i = 0; i< x.size(); ++i) {
@@ -192,7 +194,6 @@ void LBSP::displayLBSPPatch(const BinaryStr &x) {
 	}
 	std::cout << out << std::endl;
 }
-
 BinaryStr LBSP::calcLBSPDiff(const BinaryStr& a, const BinaryStr& b)  // calculates difference string between two  binary string representations (pixel-wise inter-frame LBSP)
 {
 	BinaryStr result(16);
@@ -202,8 +203,6 @@ BinaryStr LBSP::calcLBSPDiff(const BinaryStr& a, const BinaryStr& b)  // calcula
 	}
 	return result;
 }
-
-
 cv::Mat LBSP::padMat(const cv::Mat& input, int padding)
 {
 	cv::Mat padded_input;

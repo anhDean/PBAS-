@@ -53,7 +53,7 @@ void MainLoop::startVideoProcessing()
 				newN.at(actualParam), newR.at(actualParam), newRaute.at(actualParam), newTemporal.at(actualParam), //const PBAS
 				rThreshScale.at(actualParam), rIncDecFac.at(actualParam), increasingRateScale.at(actualParam), decreasingRateScale.at(actualParam), lowerTimeUpdateRateBoundary.at(actualParam), //const PBAS
 				upperTimeUpdateRateBoundary.at(actualParam),//const PBAS
-				newAlpha.at(actualParam), newBeta.at(actualParam), newConstForeground.at(actualVideo), newConstBackground.at(actualVideo)); //const graphCut
+				newAlpha.at(actualParam), newBeta.at(actualParam)); //const graphCut
 
 
 			//ChangeDetection

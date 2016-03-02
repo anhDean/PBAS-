@@ -3,21 +3,26 @@
 
 PBASFeature::PBASFeature(const PBASFeature &x)
 {
-	PBASFeature destination;
-	this->gradMag = x.gradMag.clone();
-	this->gradAngle= x.gradAngle.clone();
-	this->pxIntensity = x.pxIntensity.clone();
+	gradMag = x.gradMag.clone();
+	pxIntensity = x.pxIntensity.clone();
 }
-void PBASFeature::operator=(const PBASFeature& src)
+PBASFeature& PBASFeature::operator=(const PBASFeature& src)
 {
-	this->gradMag = src.gradMag.clone();
-	this->gradAngle = src.gradAngle.clone();
-	this->pxIntensity = src.pxIntensity.clone();
-
-
+	if (this != &src)
+	{
+		this->free();
+		gradMag = src.gradMag.clone();
+		pxIntensity = src.pxIntensity.clone();
+	}
+	return *this;
 }
 PBASFeature::PBASFeature()
 {
+}
+
+float BackgroundFeature::getDistance() const
+{
+
 }
 
 PBASFeature::~PBASFeature()
@@ -27,5 +32,11 @@ PBASFeature::~PBASFeature()
 
 void PBASFeature::free() {
 
-	this->gradMag.release(); this->gradAngle.release(); this->pxIntensity.release();
+	gradMag.release(); pxIntensity.release();
+}
+
+double PBASFeature::getGradMagnMean() const {
+
+	CV_Assert(!gradMag.empty());
+	return cv::mean(gradMag)[0];
 }
