@@ -1,17 +1,18 @@
 #include "FeatureTracker.h"
+#include "LBSP.h"
+
+
 
 FeatureTracker::FeatureTracker(double resPara,
 							   int newN, double newR, int newRaute, int newTemporal, //const for pbas
 							   double rT, double rID, double iTS, double dTS, int dTRS, int iTRS, //const for pbas
-							   double newA, double newB, double newCF, double newCB) // double newLabelThresh, int newNeighbour) //const for graphCuts
+							   double newA, double newB) // double newLabelThresh, int newNeighbour) //const for graphCuts
 
 {
 	//create a pbas-regulator for every rgb channel
-	m_pbas1.initialization(newN,newR,newRaute,newTemporal,newA,newB, newCF, newCB, rT, rID, iTS, dTS, dTRS,iTRS);
-	m_pbas2.initialization(newN,newR,newRaute,newTemporal,newA,newB, newCF, newCB, rT, rID, iTS, dTS, dTRS,iTRS);
-	m_pbas3.initialization(newN,newR,newRaute,newTemporal,newA,newB, newCF, newCB, rT, rID, iTS, dTS, dTRS,iTRS);
-
-	m_resizeParam = resPara;
+	m_pbas1.initialization(newN,newR,newRaute,newTemporal,newA,newB,  rT, rID, iTS, dTS, dTRS,iTRS);
+	m_pbas2.initialization(newN,newR,newRaute,newTemporal,newA,newB,  rT, rID, iTS, dTS, dTRS,iTRS);
+	m_pbas3.initialization(newN,newR,newRaute,newTemporal,newA,newB,  rT, rID, iTS, dTS, dTRS,iTRS);
 }
 
 FeatureTracker::~FeatureTracker(void)
@@ -41,8 +42,7 @@ void FeatureTracker::process(cv:: Mat &frame, cv:: Mat &output)
 		//###############################################
 		//POST-PROCESSING HERE
 		//for the final results in the changedetection-challenge a 9x9 median filter has been applied
-		
-
+		cv::medianBlur(m_pbasResult, m_pbasResult, 9);
 		//###############################################
 		m_pbasResult.copyTo(output);
 		//blurImage.release();
@@ -67,7 +67,6 @@ void FeatureTracker::parallelBackgroundAveraging(PBAS* m_pbas1, PBAS* m_pbas2, P
 	//just or all foreground results of each rgb channel
 	cv::bitwise_or(pbasResult1, pbasResult3, pbasResult1);
 	cv::bitwise_or(pbasResult1, pbasResult2, pbasResult1);
-	//cv::medianBlur(pbasResult1, pbasResult1, 9);
 	pbasResult1.copyTo(*pbasR);
 	
 	pbasResult2.release();

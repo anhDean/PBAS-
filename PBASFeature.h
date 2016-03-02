@@ -1,14 +1,16 @@
 #pragma once
 #include<opencv2\opencv.hpp>
+#include "BackgroundFeature.h"
 class PBASFeature
 {
 public:
-	cv::Mat gradMag, gradAngle, pxIntensity;
+	cv::Mat gradMag, pxIntensity;
 	PBASFeature();
 	PBASFeature(const PBASFeature &x);
 	~PBASFeature();
 
-	void PBASFeature::operator=(const PBASFeature& src);
+	double getGradMagnMean() const;
+	PBASFeature& PBASFeature::operator=(const PBASFeature& src);
 	void PBASFeature::free();
 	
 };
