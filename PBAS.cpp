@@ -3,7 +3,7 @@
 
 int PBAS::pbasCounter = 0; // static member variable to track instances
 
-PBAS::PBAS(void) : N(20), m_minHits(2), m_defaultSubsampling(16)
+PBAS::PBAS(void) : m_N(20), m_minHits(2), m_defaultSubsampling(16)
 {
 	//initialize background-model depending parameters
 	//r-Thresh
@@ -17,9 +17,9 @@ PBAS::PBAS(void) : N(20), m_minHits(2), m_defaultSubsampling(16)
 	
 	//initialize background-model independent parameters
 	formerMaxNorm = 1.0;
-	height = 0; 
-	width = 0;
-	runs = 0;
+	m_height = 0; 
+	m_width = 0;
+	m_runs = 0;
 	
 	m_beta = 1.0;
 	m_alpha = 1.0;
@@ -35,37 +35,43 @@ PBAS::~PBAS(void)
 	}		
 }
 
-void PBAS::initialization(int newN, double newR, int newParts, int newNrSubSampling, double a, double b, double rThrSc, double rIndDec, double incrTR, double decrTR, int lowerTB, int upperTB)
+void PBAS::initialization(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate, double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound)
 {
-	N = newN;			// N: number of past samples
-	m_defaultR = newR;		// R: decision threshold
-	m_minHits = newParts;
-	m_defaultSubsampling = newNrSubSampling; // 
+	m_N = N;			// N: number of past samples
+	m_defaultR = defaultR;		// R: decision threshold
+	m_minHits = minHits;
+	m_defaultSubsampling = defaultSubsampling; // 
 
 
 	//r-Thresh
-	m_RScale = rThrSc; // R_scale
-	m_RIncDec = rIndDec; // = R_inc/dec
+	m_RScale = RScale; // R_scale
+	m_RIncDec = RIncDec; // = R_inc/dec
 	//T-thresh
-	m_subsamplingIncRate = incrTR;		// T_inc
-	m_subsamplingDecRate = decrTR;		// T_dec
-	m_samplingLowerBound = lowerTB; // T_lower
-	m_samplingUpperBound = upperTB;	// T_upper
+	m_subsamplingIncRate = subsamplingIncRate;		// T_inc
+	m_subsamplingDecRate = subsamplingDecRate;		// T_dec
+	m_samplingLowerBound = samplingLowerBound; // T_lower
+	m_samplingUpperBound = samplingUpperBound;	// T_upper
 
-	m_beta = b;
-	m_alpha = a;
+	m_alpha = alpha;
+	m_beta = beta;
 	createRandomNumberArray(); // create random numbers beforehand for neighbor, background and distance update
 }
 
 void PBAS::createRandomNumberArray()
 {
+	randomN.clear();
+	randomX.clear();
+	randomY.clear();
+	randomDist.clear();
+	
+	
 	//pre calculate random number 
 	for(int l = 0; l < NUM_RANDOMGENERATION; l++)
 	{
-		randomN.push_back(cv::saturate_cast<int>(randomGenerator.uniform((int)0,(int)N))); 		// for Background model position coordinate, upper bound is excluded
+		randomN.push_back(cv::saturate_cast<int>(randomGenerator.uniform(0, m_N))); 		// for Background model position coordinate, upper bound is excluded
 		randomX.push_back(cv::saturate_cast<int>(randomGenerator.uniform(-1, +2)));				// for neighboring X  coordinate, upper bound is excluded
 		randomY.push_back(cv::saturate_cast<int>(randomGenerator.uniform(-1, +2)));				// for neighboring Y coordinate, upper bound is excluded
-		randomDist.push_back(cv::saturate_cast<int>(randomGenerator.uniform((int)0, (int)N))); // for Distance array posi  coordinate, upper bound is excluded
+		randomDist.push_back(cv::saturate_cast<int>(randomGenerator.uniform(0, m_N))); // for Distance array posi  coordinate, upper bound is excluded
 	}
 }
 
@@ -77,13 +83,13 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 	float formerDistanceBack, meanDistBack;
 	cv::Mat segMap(blurImage.rows, blurImage.cols, blurImage.type());
 	
-	height = input->rows;
-	width = input->cols;
+	m_height = input->rows;
+	m_width = input->cols;
 	assert(input->type() == CV_8UC1);
 	//cv::Mat blurImage(input->rows, input->cols, CV_8UC1, input->data);
 	
 	
-	if(runs < N)
+	if(m_runs < m_N)
 		// if runs < N collect background features without updating the model
 	{
 		getFeatures(imgFeatures, &blurImage);
@@ -91,7 +97,7 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 		//tempDistB = ; // create new matrix pointer (N in total)
 		m_minDistanceModel.push_back(cv::Mat(blurImage.size(), CV_32FC1)); // distanceStatisticBack: vector of Mat*, holds mean dist values for background
 		
-		if(runs == 0)
+		if(m_runs == 0)
 		// for the first run init R,T maps withdefault values
 		{	
 			m_sumMinDistMap.create(blurImage.rows,blurImage.cols, CV_32FC1);
@@ -103,7 +109,7 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 			m_subSamplingMap.create(m_sumMinDistMap.rows, m_sumMinDistMap.cols, CV_32FC1);
 			m_subSamplingMap.setTo(cv::Scalar(m_defaultR));
 		}
-		++runs;
+		++m_runs;
 	}
 	//calc features of current image
 	getFeatures(imgFeatures, &blurImage);
@@ -113,11 +119,11 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 	int glCounterFore = 0; 
 
 	// for all pixels do:
-	for (int y=0; y<height; ++y) 
+	for (int y=0; y < m_height; ++y) 
 	// for each row, algorithm processes rows sequentially
 	{
 		// for each column
-		for(int x = 0; x < width; ++x) 
+		for(int x = 0; x < m_width; ++x) 
 		{
 			// compare current pixel value to bachground model
 			int count = 0;  // used for #min
@@ -152,7 +158,7 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 
 				++index;
 			}
-			while((count < m_minHits) && (index < runs)); // count << #min && index < runs, max(runs) = N
+			while((count < m_minHits) && (index < m_runs)); // count << #min && index < runs, max(runs) = N
 
 			// is BACKGROUND
 			if(count >= m_minHits)
@@ -160,15 +166,15 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 				//set pixel to background value
 				segMap.at<uchar>(y,x) = BACKGROUND_VAL;
 				
-				if(runs < N)
+				if(m_runs < m_N)
 				{
 						formerDistanceBack = 0; // since no distance value will be replaces, nothing need to be buffered for moving avg calculation
-						m_minDistanceModel.at(runs-1).at<float>(y, x) = minDist;
-						m_sumMinDistMap.at<float>(y, x) += m_minDistanceModel.at(runs - 1).at<float>(y, x);
+						m_minDistanceModel.at(m_runs -1).at<float>(y, x) = minDist;
+						m_sumMinDistMap.at<float>(y, x) += m_minDistanceModel.at(m_runs - 1).at<float>(y, x);
 				}
 
 				//update model
-				if(runs == N)
+				if(m_runs == m_N)
 				{
 
 					// Update current pixel
@@ -215,7 +221,7 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 			}
 
 
-			meanDistBack = m_sumMinDistMap.at<float>(y, x) / runs;
+			meanDistBack = m_sumMinDistMap.at<float>(y, x) / m_runs;
 			updateRThresholdXY(x, y, meanDistBack);
 			updateSubsamplingXY(x, y, segMap.at<uchar>(y, x),meanDistBack);
 		}
@@ -291,18 +297,18 @@ void PBAS::checkValid(int &x, int &y)
 	{
 		x = 0;
 	}
-	else if(x >= width)
+	else if(x >= m_width)
 	{
-		x = width -1;
+		x = m_width -1;
 	}
 
 	if(y < 0)
 	{		
 		y = 0;
 	}
-	else if(y >= height)
+	else if(y >= m_height)
 	{
-		y = height - 1;
+		y = m_height - 1;
 	}	
 }
 
@@ -326,4 +332,24 @@ const double& PBAS::getBeta() const {
 }
 
 
-inline void PBAS::deallocMem(cv::Mat * mat) { mat->release();  delete mat; }
+
+
+const int& PBAS::getPBASCounter()
+{
+	return pbasCounter;
+
+}
+
+void PBAS::reset()
+{
+	m_runs = 0;
+	m_height = 0;
+	m_width = 0;
+	createRandomNumberArray();
+	m_backgroundModel.clear();
+	m_minDistanceModel.clear();
+	m_sumMinDistMap.release();
+	m_RMap.release();
+	m_subSamplingMap.release();
+
+}
