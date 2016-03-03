@@ -1,8 +1,8 @@
-#include"code\PBAS-\FileHandler.h"
+#include"FileHandler.h"
 #include<opencv2\opencv.hpp>
 #include<iostream>
-#include "code\PBAS-\FrameProcessor.h"
-#include"code\PBAS-\PBASFrameProcessor.h"
+#include "FrameProcessor.h"
+#include"PBASFrameProcessor.h"
 #include<thread>
 
 //#define _DATASET
@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 	CV_Assert(argc == 3);
 	std::string data_root = argv[1], result_root = argv[2];
 	const int ROOT_DEPTH = 2;
-	const int THREAD_NUM = 10;
+	const int THREAD_NUM = 3;
 	
 
 	std::vector<FileHandler> f_obj_arr;
@@ -105,15 +105,24 @@ int main(int argc, char** argv)
 
 
 #ifdef _CAMERA
+	PBASFrameProcessor processor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
 
-#endif //  _FOLDER
+	cv::VideoCapture cap(0);// open default camera
+	if (!cap.isOpened())
+		return -1;
 
-
-
-
-
-
-
+	cv::Mat frame, out;
+	while (true)
+	{
+		cap >> frame; // get a new frame from camera
+		processor.process(frame, out);
+		cv::cvtColor(frame, frame, CV_BGR2GRAY);
+		out = out / 255; // get binary map {0,1}
+		cv::imshow("output", frame.mul(out)); // mask input frame with segmentation map
+		cv::imshow("input", frame);
+		if (cv::waitKey(30) >= 0) break;
+	}
+#endif
 
 	return 0;
 }
