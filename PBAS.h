@@ -10,7 +10,7 @@ class PBAS
 {
 
 private:
-	int N;
+	int m_N;
 	int m_minHits; // #min
 	double m_RScale; // R_scale
 	double m_RIncDec;	// R_inc/dec
@@ -32,8 +32,8 @@ private:
 
 	//pre - initialize the randomNumbers for better performance
 	std::vector<int> randomSubSampling, randomN, randomX, randomY, randomDist;
-	int runs;
-	int height, width;	// hieght, width of frame
+	int m_runs;
+	int m_height, m_width;	// hieght, width of frame
 
 
 
@@ -62,19 +62,20 @@ private:
 	void getFeatures(PBASFeature& descriptor, cv::Mat* intImg);
 	void updateRThresholdXY(int x, int y, float avg_dmin);
 	void updateSubsamplingXY(int x, int y, int bg_value, float avg_dmin);
-	static void deallocMem(cv::Mat *mat);
 
 
 public:
 	PBAS(void);
 	~PBAS(void);
 	
-	void initialization(int newN, double newR, int newParts, int newNrSubSampling, double a, double b, double rThrSc, double rIndDec, double incrTR, double decrTR, int lowerTB, int upperTB);
-	
+	void initialization(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate, double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound);
+	void reset();
+
 	bool process(cv::Mat *input, cv::Mat*);
 	void setAlpha(double alph);
 	void setBeta(double bet);
 
+	static const int& getPBASCounter();
 	const double& getAlpha() const;
 	const double& getBeta() const;
 	const cv::Mat& getTImg() const;

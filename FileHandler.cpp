@@ -2,11 +2,12 @@
 
 
 
-FileHandler::FileHandler(const std::string& dataRt, const std::string& resultRt, int rt_depth) : m_input_root(dataRt), m_output_root(resultRt), m_root_depth(rt_depth), m_inputFolders(getInputFoldernames()),
+FileHandler::FileHandler(const std::string& dataRt, const std::string& resultRt, int rt_depth, bool setupDirectories) : m_input_root(dataRt), m_output_root(resultRt), m_root_depth(rt_depth), m_inputFolders(getInputFoldernames()), m_showProcessing(false),
 																								m_outputFolders(m_inputFolders), m_inputSuffix(".jpg"), m_inputPrefix("in"), m_outputSuffix(".png"), m_outputPrefix("bin")
 {
 	setOutputFolders();
-	createDirectories();
+	if(setupDirectories)
+		createDirectories();
 }
 
 void FileHandler::setOutputFolders()
@@ -20,8 +21,9 @@ void FileHandler::setOutputFolders()
 }
 void FileHandler::createDirectories() const
 {
-
+	// WARNING: DELETES ALL CONTENT OF ROOT OUTPUT DIRECTORY
 	fs::remove_all(m_output_root);
+	Sleep(30); // need short delay to remove all contents before creating new directories
 	bool(*cr)(const fs::path&) = fs::create_directories; // function pointer to create directories function
 	std::for_each(m_outputFolders.begin(), m_outputFolders.end(), cr);
 
@@ -73,7 +75,7 @@ bool FileHandler::replaceSubstring(std::string& src, const std::string& old_str,
 
 
 
-const int& FileHandler::getFolderCount() const
+const size_t& FileHandler::getFolderCount() const
 {
 	return m_inputFolders.size();
 }
@@ -126,5 +128,14 @@ std::string FileHandler::getOutputFilename(const std::string& inputFilename)
 	replaceSubstring(outputFilename, m_inputPrefix, m_outputPrefix);
 	replaceSubstring(outputFilename, m_inputSuffix, m_outputSuffix);
 	return outputFilename;
+}
+
+void FileHandler::setDisplayFlag(bool flag) 
+{
+	m_showProcessing = flag;
+}
+const bool& FileHandler::getDisplayFlag()const
+{
+	return m_showProcessing;
 }
 
