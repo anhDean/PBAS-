@@ -4,20 +4,7 @@
 #include <algorithm>
 #include <iostream>
 
-
-// include guard for logger
-#ifndef LOGGER_IDENT
-#define LOGGER_IDENT
-#if _DEBUG
-#define LOG_MESSAGE(x) std::cout << __FILE__<< "(" << __LINE__ << ")" << (x) << std::endl
-#else
-#define LOG_MESSAGE(x)
-#endif
-#endif
-
 typedef std::vector<bool> BinaryStr; // TODO: make binarystr to struct with reference value
-
-
 
 class LBSP
 {
@@ -26,22 +13,22 @@ private:
 	int m_nRows, m_nCols;
 	float m_thresh;
 	std::vector<BinaryStr> m_LBSPArray;	// represents matrix with LBSPs
-										// static data member
+	
+	// static data member
 	static const int LBSP_NUM; // length of binary pattern
 	static const std::vector<int> LBSP_PATTERN_ORDER_X;
 	static const std::vector<int> LBSP_PATTERN_ORDER_Y;
+	
 	// member funtions
 	BinaryStr calcLBSPXY(const cv::Mat &im, const int &x, const int &y) const; // calculates LBSP at given x,y coordinate
-	
+	void init(const cv::Mat& input);
 
 public:
 	//constructor, destructor
-	LBSP();
-	LBSP(const LBSP& input); // copy constructor
-	LBSP& operator=(const LBSP& b); // assignment operator
 	LBSP(const cv::Mat& input, const float& thresh = 0.3); // constructor: generates matrix of LBSP pattern
-	void init(const cv::Mat& input);
+	LBSP& operator=(const LBSP& b); // assignment operator
 	~LBSP();
+
 	// getters
 	const int& getCols() const;
 	const int& getRows() const;
@@ -63,6 +50,7 @@ public:
 	static cv::Mat calcLBSPArrayDiff(const LBSP&a, const LBSP &b); // returns hammingweight array of difference of two LBSP instances
 	static cv::Mat LBSP2HWArray(const std::vector<BinaryStr>&a, int rows, int cols); // returns array with hamming weights of LBSP patterns
 	static BinaryStr calcLBSPDiff(const BinaryStr& a, const BinaryStr& b);
+	
 	static void displayLBSP(const BinaryStr &x);
 	static void displayLBSPPatch(const BinaryStr &x);
 	static cv::Mat padMat(const cv::Mat& input, int padding = 2);

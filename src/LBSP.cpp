@@ -4,20 +4,13 @@ const std::vector<int> LBSP::LBSP_PATTERN_ORDER_X = { 0, 2, 4, 1, 2, 3, 0, 1, 3,
 const std::vector<int> LBSP::LBSP_PATTERN_ORDER_Y = { 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4 }; // Y-Coordinate order for LBSP processing
 const int LBSP::LBSP_NUM = 16;
 
-LBSP::LBSP()
-{
-
-}
 LBSP::LBSP(const cv::Mat& input, const float& thresh) : m_nRows(input.rows), m_nCols(input.cols), m_thresh(thresh), m_LBSPArray(input.rows * input.cols)
 {
 
 	CV_Assert(input.type() == CV_8UC1 || input.type() == CV_8UC3);
 	setLBSPArray(input);
 }
-LBSP::LBSP(const LBSP& input) : m_nRows(input.m_nRows), m_nCols(input.m_nCols), m_thresh(input.m_thresh), m_LBSPArray(input.m_nCols* input.m_nRows)
-{
-	setLBSPArray(input.m_LBSPArray);
-}
+
 void LBSP::init(const cv::Mat& input)
 {
 	

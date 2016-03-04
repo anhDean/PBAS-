@@ -18,10 +18,11 @@ private:
 public:
 	PBASFrameProcessor(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate, double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound); // double, int);//const for graphCuts
 	~PBASFrameProcessor(void);
-	void resetProcessor();
+	
 	void setDefaultValues(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate,
 		double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound);
-
+	
+	void resetProcessor();
 	void process(cv::Mat &, cv::Mat &);
 	void process(cv::Mat &);
 };
