@@ -1,9 +1,12 @@
 #include "FileHandler.h"
 
+FileHandler::FileHandler() : m_showProcessing(false), m_inputSuffix(".jpg"), m_inputPrefix("in"), m_outputSuffix(".png"), m_outputPrefix("bin")
+{
+}
 
-
-FileHandler::FileHandler(const std::string& dataRt, const std::string& resultRt, int rt_depth, bool setupDirectories) : m_input_root(dataRt), m_output_root(resultRt), m_root_depth(rt_depth), m_inputFolders(getInputFoldernames()), m_showProcessing(false),
-																								m_outputFolders(m_inputFolders), m_inputSuffix(".jpg"), m_inputPrefix("in"), m_outputSuffix(".png"), m_outputPrefix("bin")
+FileHandler::FileHandler(const std::string& dataRt, const std::string& resultRt, int rt_depth, bool setupDirectories) : m_input_root(dataRt), m_output_root(resultRt), m_root_depth(rt_depth), m_inputFolders(getInputFoldernames()), m_outputFolders(m_inputFolders),
+																													m_showProcessing(false), m_inputSuffix(".jpg"), m_inputPrefix("in"), m_outputSuffix(".png"), m_outputPrefix("bin")
+																								
 {
 	setOutputFolders();
 	if(setupDirectories)
@@ -139,3 +142,9 @@ const bool& FileHandler::getDisplayFlag()const
 	return m_showProcessing;
 }
 
+bool FileHandler::createDirectory(const std::string dir) const
+{
+	// parent must exist, if not empty function does nothing
+	fs::create_directory(dir);
+	return true;
+}

@@ -1,11 +1,10 @@
 #pragma once
-#include <filesystem>
+#include<filesystem>
 #include<vector>
 #include<string>
 #include<algorithm>
 #include<opencv2/opencv.hpp>
 #include<Windows.h> // used Only for sleep function in createDirectories
-
 
 namespace fs =  std::tr2::sys;
 
@@ -29,6 +28,7 @@ private:
 
 
 public:
+	FileHandler();
 	FileHandler(const std::string& inpRt, const std::string& outRt, int rt_depth, bool setupDirectories);
 	// TODO: new constructor for videos -> use cv:: videocapture FileHandler(captureobject, outputdirectory)
 	// TODO: process_video member function -> for processing videos cv::Mat getFrame() -> process -> write
@@ -50,10 +50,15 @@ public:
 	void setInputPrefix(const std::string& newVal);
 	void setOutputPrefix(const std::string& newVal);
 	void setDisplayFlag(bool flag);
+
+	bool createDirectory(const std::string dir) const;
 };
 
-// template member functions defined in header
 
+
+
+
+// template member functions defined in header
 template<class FrameProcessorClass>
 bool FileHandler::process_folder(std::string inputFolder, std::string outputFolder, FrameProcessorClass* processor) 
 {
@@ -88,7 +93,6 @@ bool FileHandler::process_folder(std::string inputFolder, std::string outputFold
 	cv::destroyWindow(windowName);
 	return true;
 }
-
 template<class FrameProcessorClass>
 bool FileHandler::process_folder(int idx, FrameProcessorClass* processor)
 {
