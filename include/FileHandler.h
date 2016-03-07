@@ -65,6 +65,9 @@ bool FileHandler::process_folder(std::string inputFolder, std::string outputFold
 	// get file name
 	std::string tmp_inputFile, tmp_outputFile, windowName = outputFolder;
 	cv::Mat input, output;
+	cv::Mat tmp_bgDynamics,m, tmp_bgNoise;
+	
+	double minVal, maxVal, epsilon = 1e-6;
 
 	for (fs::directory_iterator it(inputFolder), end; it != end; ++it)
 	{
@@ -80,8 +83,16 @@ bool FileHandler::process_folder(std::string inputFolder, std::string outputFold
 
 		if(m_showProcessing)
 		{
-			cv::namedWindow(windowName);
+			cv::minMaxLoc(processor->getBackgroundDynamics(), &minVal, &maxVal);
+			tmp_bgDynamics = processor->getBackgroundDynamics().mul(cv::saturate_cast<float>(1/(maxVal + epsilon)));
+			
+			cv::minMaxLoc(processor->getNoiseMap(), &minVal, &maxVal);
+			tmp_bgNoise = processor->getNoiseMap().mul(cv::saturate_cast<float>(1/(maxVal + epsilon)));
+
 			cv::imshow(windowName, output);
+			cv::imshow(windowName + " Input", input);
+			cv::imshow("Background dynamics", tmp_bgDynamics);
+			cv::imshow("Background Noise", tmp_bgNoise);
 			if (cv::waitKey(1) == 27)  // 27 = ESC
 				break;
 		}
@@ -90,7 +101,9 @@ bool FileHandler::process_folder(std::string inputFolder, std::string outputFold
 	processor->resetProcessor();
 	input.release();
 	output.release();
-	cv::destroyWindow(windowName);
+	tmp_bgNoise.release();
+	tmp_bgDynamics.release();
+	cv::destroyAllWindows();
 	return true;
 }
 template<class FrameProcessorClass>

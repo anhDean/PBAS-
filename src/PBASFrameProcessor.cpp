@@ -1,9 +1,11 @@
 #include "PBASFrameProcessor.h"
 #include "LBSP.h"
 
+
+
 PBASFrameProcessor::PBASFrameProcessor(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate, 
 	double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound) : 
-	m_pbas1(new PBAS()), m_pbas2(new PBAS()), m_pbas3(new PBAS())// double newLabelThresh, int newNeighbour) //const for graphCuts
+	m_iteration(0), m_pbas1(new PBAS()), m_pbas2(new PBAS()), m_pbas3(new PBAS())// double newLabelThresh, int newNeighbour) //const for graphCuts
 
 {
 	setDefaultValues(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, samplingLowerBound, samplingUpperBound);
@@ -29,31 +31,36 @@ void PBASFrameProcessor::setDefaultValues(int N, double defaultR, int minHits, i
 
 void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 {
+		const int medFilterSize = 9;
 		//###################################
 		//PRE-PROCESSING
 		//check if bluring is necessary or beneficial at this point
-		cv::Mat blurImage;
-		cv::GaussianBlur(frame, blurImage, cv::Size(3,3), 3);
+		if (m_iteration == 0)
+		{
+			m_lastResult = cv::Mat::zeros(frame.size(), CV_8U);
+			m_lastResultPP = cv::Mat::zeros(frame.size(), CV_8U);
+			m_noiseMap = cv::Mat::zeros(frame.size(), CV_64F);
+
+		}
+
+		//cv::Mat blurImage;
+		//cv::GaussianBlur(frame, blurImage, cv::Size(3,3), 3);
 		//maybe use a bilateralFilter
 		//cv::bilateralFilter(frame, blurImage, 5, 15, 15);
 		//###################################
 		//color image
 		std::vector<cv::Mat> rgbChannels(3);
-		cv::split(blurImage, rgbChannels);
-		parallelBackgroundAveraging(&rgbChannels, false, &m_pbasResult);
-					
-		rgbChannels.at(0).release();
-		rgbChannels.at(1).release();
-		rgbChannels.at(2).release();
-		rgbChannels.clear();
+		cv::split(frame, rgbChannels);
+		parallelBackgroundAveraging(&rgbChannels, false, &m_currentResult);
 		//###############################################
 		//POST-PROCESSING HERE
 		//for the final results in the changedetection-challenge a 9x9 median filter has been applied
-		cv::medianBlur(m_pbasResult, m_pbasResult, 9);
+		cv::medianBlur(m_currentResult, m_currentResultPP, medFilterSize);
 		//###############################################
-		m_pbasResult.copyTo(output);
-		//blurImage.release();
-
+		m_currentResultPP.copyTo(output);
+		updateNoiseMap();
+		m_currentResult.copyTo(m_lastResult);
+		++m_iteration;
 }
 
 void PBASFrameProcessor::parallelBackgroundAveraging(std::vector<cv::Mat>* rgb,  bool wGC,cv::Mat * pbasR) const
@@ -93,7 +100,42 @@ void PBASFrameProcessor::process(cv::Mat &)
 void PBASFrameProcessor::resetProcessor()
 {
 	// performs reset on PBAS members: background model is deleted etc.
+	m_iteration = 0;
+	m_lastResult.release();
+	m_lastResultPP.release();
+	m_noiseMap.release();
 	m_pbas1->reset();
 	m_pbas2->reset();
 	m_pbas3->reset();
+}
+
+const cv::Mat& PBASFrameProcessor::getBackgroundDynamics() const
+{
+	return m_pbas1->getMeanDmin();
+}
+
+const cv::Mat& PBASFrameProcessor::getNoiseMap() const
+{
+	return m_noiseMap;
+}
+
+void PBASFrameProcessor::updateNoiseMap()
+{
+	cv::Mat tmp;
+	cv::bitwise_xor(m_lastResult, m_currentResult, tmp);
+
+	for (int y = 0; y < m_noiseMap.rows; ++y)
+	{
+		for (int x = 0; x < m_noiseMap.cols; ++x)
+		{
+			if (tmp.at<uchar>(y, x) == PBAS::BACKGROUND_VAL || 
+				(tmp.at<uchar>(y, x) == PBAS::FOREGROUND_VAL && (m_lastResultPP.at<uchar>(y, x) == PBAS::FOREGROUND_VAL || m_currentResultPP.at<uchar>(y, x) == PBAS::FOREGROUND_VAL)))
+			{
+				m_noiseMap.at<double>(y, x) -= 0.2;
+				m_noiseMap.at<double>(y, x) = (m_noiseMap.at<double>(y, x) < 0.0) ? 0 : m_noiseMap.at<double>(y, x);
+			}
+			else
+				m_noiseMap.at<double>(y, x) += 1;
+		}
+	}
 }

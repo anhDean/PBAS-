@@ -13,9 +13,9 @@
 #endif
 
 //#define _DATASET
-//#define _FOLDER
+#define _FOLDER
 //#define _CAMERA
-#define _PROTOTYPING
+//#define _PROTOTYPING
 
 int main(int argc, char** argv)
 {
@@ -122,14 +122,16 @@ int main(int argc, char** argv)
 	delete processor;
 	*/
 
-
-	const std::string inputFolder = "";
-	const std::string outputFolder = "";
-	FrameProcessor* processor = new PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
+	const std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\dynamicBackground\\fountain01\\input";
+	const std::string outputFolder = "E:\\Test";
+	FrameProcessor* processor = new  PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
 	FileHandler fh;
-
+	fh.setDisplayFlag(true);
 	fh.process_folder(inputFolder, outputFolder, processor);
+
 	delete processor;
+
+
 
 #endif
 #ifdef _CAMERA
@@ -169,5 +171,5 @@ int main(int argc, char** argv)
 
 #endif
 
-	return 0;
+return 0;
 }
