@@ -99,7 +99,10 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 		
 		if(m_runs == 0)
 		// for the first run init R,T maps withdefault values
-		{	
+		{		
+			m_meanMinDistMap.create(blurImage.rows, blurImage.cols, CV_32FC1);
+			m_meanMinDistMap.setTo(cv::Scalar(0.0));
+
 			m_sumMinDistMap.create(blurImage.rows,blurImage.cols, CV_32FC1);
 			m_sumMinDistMap.setTo(cv::Scalar(0.0));
 
@@ -138,10 +141,7 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 			do
 			{
 				
-				// distance calculation
-				double norm = abs((double)m_backgroundModel.at(index).gradMag.at<float>(y, x) - (double)imgFeatures.gradMag.at<float>(y, x));
-				int pixVal = abs(m_backgroundModel.at(index).pxIntensity.at<uchar>(y, x) - imgFeatures.pxIntensity.at<uchar>(y,x));
-				dist = (m_alpha*(norm/formerMaxNorm) + m_beta * ((double) pixVal)); // beta: second weighting factor in distance function
+				dist = calcDistanceXY(imgFeatures, x, y, index);
 
 				if(dist < m_RMap.at<float>(y, x)) // match: smaller than pixel-depending threshold r
 				{
@@ -152,7 +152,7 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 				}
 				else
 				{
-					maxNorm += norm;
+					//maxNorm += norm;
 					++glCounterFore; 
 				}
 
@@ -226,10 +226,11 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 			updateSubsamplingXY(x, y, segMap.at<uchar>(y, x),meanDistBack);
 		}
 	}
+	m_meanMinDistMap = m_sumMinDistMap.mul(1.0 / m_runs);
 	// calculate average gradient magnitude
 	//double meanNorm = maxNorm / ((double)(glCounterFore + 1));
-	double meanNorm = imgFeatures.getGradMagnMean();
-	formerMaxNorm = (meanNorm > 100) ?  100 : meanNorm; //TODO: old value 20
+	double meanNorm = abs( formerMaxNorm - imgFeatures.getGradMagnMean());
+	formerMaxNorm = (meanNorm > 20) ?  20 : meanNorm; //TODO: old value 20 or 100
 	// write segmentation result to output
 	segMap.copyTo(*output);
 	return true;
@@ -273,7 +274,6 @@ const cv::Mat& PBAS::getRImg() const
 {
 	// treshold map
 	return m_RMap;
-
 }
 
 const cv::Mat& PBAS::getTImg() const 
@@ -323,6 +323,18 @@ void PBAS::getFeatures(PBASFeature& descriptor, cv::Mat* intImg)
 	
 }
 
+double PBAS::calcDistanceXY(const PBASFeature& imgFeatures, int x, int y, int index) const
+{
+	// index: position of sample in background model
+	// imgFeatures: imgFeatures matrix in current frame
+	
+	double norm = abs((double)m_backgroundModel.at(index).gradMag.at<float>(y, x) - (double)imgFeatures.gradMag.at<float>(y, x));
+	int pixVal = abs(m_backgroundModel.at(index).pxIntensity.at<uchar>(y, x) - imgFeatures.pxIntensity.at<uchar>(y, x));
+	
+	return (m_alpha*(norm / formerMaxNorm) + m_beta * pixVal);
+
+}
+
 const double& PBAS::getAlpha() const {
 	return m_alpha;
 }
@@ -330,9 +342,6 @@ const double& PBAS::getAlpha() const {
 const double& PBAS::getBeta() const {
 	return m_beta;
 }
-
-
-
 
 const int& PBAS::getPBASCounter()
 {
@@ -353,3 +362,9 @@ void PBAS::reset()
 	m_subSamplingMap.release();
 
 }
+
+const cv::Mat& PBAS::getMeanDmin() const
+{
+	return m_meanMinDistMap;
+}
+
