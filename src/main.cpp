@@ -19,40 +19,27 @@
 
 int main(int argc, char** argv)
 {
-	// PBAS Parameter Settings
-	int N = 35;
-	int minHits = 2;
-	double alpha = 10;
-	double beta = 1;
-
-	double defaultR = 18;
-	double RScale = 5;
-	double RIncDec = 0.05;
-
-	int defaultSubsampling = 16;
-	double subsamplingIncRate = 1;
-	double subsamplingDecRate = 0.05;
-	int subsamplingLowerBound = 2;
-	int subsamplingUpperBound = 200;
+	// PBAS Parameter Settings using macro trick
+#define DEFINE_FRAMEPROCESSORPARAMS(type, name, value) type name = value;
+	#include "FrameProcessorParams.h"
+	#undef DEFINE_FRAMEPROCESSORPARAMS
 
 #ifdef _DATASET
-
 	CV_Assert(argc == 3);
 	std::string data_root = argv[1], result_root = argv[2];
+	int x = 10;
 	const int ROOT_DEPTH = 2;
-	const int THREAD_NUM = 31;
+	const int THREAD_NUM = 25;
 	std::vector<FileHandler> f_obj_arr;
 	for (int i = 0; i <THREAD_NUM; ++i)
 	{
 		if(i==0)
-			f_obj_arr.push_back(FileHandler(data_root, result_root, ROOT_DEPTH, true));
+			f_obj_arr.push_back(FileHandler(data_root, result_root, ROOT_DEPTH, true)); // true: removes all folders in output root
 		else
 			f_obj_arr.push_back(FileHandler(data_root, result_root, ROOT_DEPTH, false));
 		
 		//f_obj_arr[i].setDisplayFlag(true);
 	}
-
-
 	std::vector<FrameProcessor*> frame_proc_arr(THREAD_NUM);
 	for (int i = 0; i < frame_proc_arr.size(); ++i)
 	{
@@ -70,7 +57,7 @@ int main(int argc, char** argv)
 	{
 		for (int k = 0; k < THREAD_NUM; ++k)
 		{
-			thread_arr[k] = std::thread(static_cast<bool (FileHandler::*) (std::string, std::string, FrameProcessor*)>(&FileHandler::process_folder<FrameProcessor>),
+			thread_arr[k] = std::thread(static_cast<bool (FileHandler::*) (std::string, std::string, FrameProcessor*)>(&FileHandler::process_folder),
 										&f_obj_arr[k], inputFolders[it * THREAD_NUM + k], outputFolders[it * THREAD_NUM + k], frame_proc_arr[k]);
 		}
 		
@@ -83,7 +70,7 @@ int main(int argc, char** argv)
 	int divisor = floor(f_obj_arr.at(0).getFolderCount() / THREAD_NUM);
 	for (int i = 0; i < remainder; ++i)
 	{
-		thread_arr[i] = std::thread(static_cast<bool (FileHandler::*) (std::string, std::string, FrameProcessor*)>(&FileHandler::process_folder<FrameProcessor>),
+		thread_arr[i] = std::thread(static_cast<bool (FileHandler::*) (std::string, std::string, FrameProcessor*)>(&FileHandler::process_folder),
 			&f_obj_arr[i], inputFolders[divisor * THREAD_NUM + i], outputFolders[divisor * THREAD_NUM + i], frame_proc_arr[i]);
 		
 		std::cout << divisor * THREAD_NUM + i << std::endl;
@@ -122,7 +109,7 @@ int main(int argc, char** argv)
 	delete processor;
 	*/
 
-	const std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\dynamicBackground\\fountain01\\input";
+	const std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\baseline\\highway\\input";
 	const std::string outputFolder = "E:\\Test";
 	FrameProcessor* processor = new  PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
 	FileHandler fh;
@@ -165,9 +152,6 @@ int main(int argc, char** argv)
 	LBSP::displayPatchXY(test_frame, 10, 10, 500, true);
 
 	cv::waitKey(0);
-
-
-
 
 #endif
 

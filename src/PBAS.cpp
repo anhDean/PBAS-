@@ -75,12 +75,12 @@ void PBAS::createRandomNumberArray()
 	}
 }
 
-bool PBAS::process(cv::Mat* input, cv::Mat* output)
+bool PBAS::process(cv::Mat* input, cv::Mat* output, const cv::Mat* gradMag)
 {
 	PBASFeature imgFeatures; // temp: hold temporary image features (3 matrices)
 	cv::Mat blurImage = input->clone();
 	int xNeigh, yNeigh;	// x,y coordinate of neighbor
-	float formerDistanceBack, meanDistBack;
+	double formerDistanceBack, meanDistBack;
 	cv::Mat segMap(blurImage.rows, blurImage.cols, blurImage.type());
 	
 	m_height = input->rows;
@@ -92,30 +92,28 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 	if(m_runs < m_N)
 		// if runs < N collect background features without updating the model
 	{
-		getFeatures(imgFeatures, &blurImage);
+		getFeatures(imgFeatures, &blurImage, gradMag);
 		m_backgroundModel.push_back(imgFeatures);
 		//tempDistB = ; // create new matrix pointer (N in total)
-		m_minDistanceModel.push_back(cv::Mat(blurImage.size(), CV_32FC1)); // distanceStatisticBack: vector of Mat*, holds mean dist values for background
+		m_minDistanceModel.push_back(cv::Mat(blurImage.size(), CV_32F)); // distanceStatisticBack: vector of Mat*, holds mean dist values for background
 		
 		if(m_runs == 0)
 		// for the first run init R,T maps withdefault values
 		{		
-			m_meanMinDistMap.create(blurImage.rows, blurImage.cols, CV_32FC1);
-			m_meanMinDistMap.setTo(cv::Scalar(0.0));
 
-			m_sumMinDistMap.create(blurImage.rows,blurImage.cols, CV_32FC1);
+			m_sumMinDistMap.create(blurImage.rows,blurImage.cols, CV_32F);
 			m_sumMinDistMap.setTo(cv::Scalar(0.0));
 
-			m_RMap.create(m_sumMinDistMap.rows, m_sumMinDistMap.cols, CV_32FC1);
+			m_RMap.create(m_sumMinDistMap.rows, m_sumMinDistMap.cols, CV_32F);
 			m_RMap.setTo(cv::Scalar(m_defaultSubsampling));
 
-			m_subSamplingMap.create(m_sumMinDistMap.rows, m_sumMinDistMap.cols, CV_32FC1);
+			m_subSamplingMap.create(m_sumMinDistMap.rows, m_sumMinDistMap.cols, CV_32F);
 			m_subSamplingMap.setTo(cv::Scalar(m_defaultR));
 		}
 		++m_runs;
 	}
 	//calc features of current image
-	getFeatures(imgFeatures, &blurImage);
+	getFeatures(imgFeatures, &blurImage, gradMag);
 	double sumDist = 0.0;
 	// variables to generate old average of gradient magnitude
 	double maxNorm = 0.0;
@@ -135,18 +133,16 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 			double temp = 0.0;
 			double maxDist = 0.0;
 			double maxDistB = 0.0;
-			double minDist = 1000.0; // arbritrary large number for minDist
+			float minDist = 1000.0; // arbritrary large number for minDist
 			int entry = randomGenerator.uniform(5, NUM_RANDOMGENERATION-5);
 
 			do
 			{
-				
 				dist = calcDistanceXY(imgFeatures, x, y, index);
 
 				if(dist < m_RMap.at<float>(y, x)) // match: smaller than pixel-depending threshold r
 				{
 					++count;
-
 					if(minDist > dist)
 						minDist = dist;
 				}
@@ -223,10 +219,9 @@ bool PBAS::process(cv::Mat* input, cv::Mat* output)
 
 			meanDistBack = m_sumMinDistMap.at<float>(y, x) / m_runs;
 			updateRThresholdXY(x, y, meanDistBack);
-			updateSubsamplingXY(x, y, segMap.at<uchar>(y, x),meanDistBack);
+			updateSubsamplingXY(x, y, segMap.at<uchar>(y, x), meanDistBack);
 		}
 	}
-	m_meanMinDistMap = m_sumMinDistMap.mul(1.0 / m_runs);
 	// calculate average gradient magnitude
 	//double meanNorm = maxNorm / ((double)(glCounterFore + 1));
 	double meanNorm = abs( formerMaxNorm - imgFeatures.getGradMagnMean());
@@ -312,13 +307,11 @@ void PBAS::checkValid(int &x, int &y)
 	}	
 }
 
-void PBAS::getFeatures(PBASFeature& descriptor, cv::Mat* intImg)
+void PBAS::getFeatures(PBASFeature& descriptor, cv::Mat* intImg, const cv::Mat* gradMag)
 {
-	cv::Mat sobelX, sobelY;
-	// features: gradient magnitude and direction and pixel intensities	
-	cv::Sobel(*intImg, sobelX, CV_32F, 1, 0, 3, 1, 0.0); // get gradient magnitude for dx
-	cv::Sobel(*intImg, sobelY, CV_32F, 0, 1, 3, 1, 0.0); // get gradient magnitude for dy
-	cv::cartToPolar(sobelX,sobelY, descriptor.gradMag, sobelY, true); // convert cartesian to polar coordinates
+	
+	// shared variable: gradMagnMap
+	descriptor.gradMag = gradMag->clone();
 	intImg->copyTo(descriptor.pxIntensity);
 	
 }
@@ -363,8 +356,11 @@ void PBAS::reset()
 
 }
 
-const cv::Mat& PBAS::getMeanDmin() const
+const cv::Mat& PBAS::getSumMinDistMap() const
 {
-	return m_meanMinDistMap;
+	return m_sumMinDistMap;
 }
-
+const int& PBAS::getRuns() const
+{
+	return m_runs;
+}
