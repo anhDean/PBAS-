@@ -19,7 +19,7 @@ set FIRSTRUN=1
 
 set CSVFILE=%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_csv.dat
 
-for /l %%x in (1, 1, 10) do (
+for /l %%x in (15, 5, 75) do (
 
 set PARAMVAL=%%x
 
@@ -49,6 +49,7 @@ rem write eval results to csv file
 pushd %PYTHONFOLDER%
 start /wait %BATCHFOLDER%\write_csvfile.cmd "%EVALFILE%" "%PARAMNAME%" "!PARAMVAL!" "!FIRSTRUN!"
 popd
+
 set FIRSTRUN=0
 )
 

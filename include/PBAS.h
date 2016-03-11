@@ -21,7 +21,7 @@ private:
 	double m_subsamplingIncRate;	// T_inc
 	double m_subsamplingDecRate;	// T_dec
 	double m_defaultR;				// defaultR and lower bound of decision threshold
-	int m_samplingUpperBound;		//T_Upper
+	int m_samplingUpperBound;		// T_Upper
 	int m_samplingLowerBound;		// T_Lower
 	int m_runs;						// iteration counter
 	int m_height, m_width;			// height, width of frame
@@ -61,7 +61,7 @@ public:
 	void initialization(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate, double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound);
 	void reset();
 
-	bool process(cv::Mat *input, cv::Mat*, const cv::Mat* gradMag);
+	bool process(const cv::Mat *input, cv::Mat* output, const cv::Mat* gradMag, const cv::Mat& noiseMap);
 	void setAlpha(double alph);
 	void setBeta(double bet);
 

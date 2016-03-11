@@ -10,8 +10,6 @@ PBASFrameProcessor::PBASFrameProcessor(int N, double defaultR, int minHits, int 
 {
 	setDefaultValues(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, samplingLowerBound, samplingUpperBound);
 }
-
-
 PBASFrameProcessor::~PBASFrameProcessor(void)
 { 	
 	delete m_gradMagnMap;
@@ -19,7 +17,6 @@ PBASFrameProcessor::~PBASFrameProcessor(void)
 	delete m_pbas2;
 	delete m_pbas3;
 }
-
 
 void PBASFrameProcessor::setDefaultValues(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate,
 	double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound)
@@ -29,7 +26,6 @@ void PBASFrameProcessor::setDefaultValues(int N, double defaultR, int minHits, i
 	m_pbas3->initialization(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, samplingLowerBound, samplingUpperBound);
 }
 
-
 void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 {
 		const int medFilterSize = 9;
@@ -38,22 +34,20 @@ void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 		//check if bluring is necessary or beneficial at this point
 		if (m_iteration == 0)
 		{
-			
 			m_lastResult = cv::Mat::zeros(frame.size(), CV_8U);
 			m_lastResultPP = cv::Mat::zeros(frame.size(), CV_8U);
 			m_noiseMap = cv::Mat::zeros(frame.size(), CV_64F);
 			m_gradMagnMap->create(frame.size(), CV_32F);
 		}
-
 		updateGradMagnMap(frame);
-		//cv::Mat blurImage;
-		//cv::GaussianBlur(frame, blurImage, cv::Size(3,3), 3);
+		cv::Mat blurImage;
+		cv::GaussianBlur(frame, blurImage, cv::Size(3,3), 3);
 		//maybe use a bilateralFilter
 		//cv::bilateralFilter(frame, blurImage, 5, 15, 15);
 		//###################################
 		//color image
 		std::vector<cv::Mat> rgbChannels(3);
-		cv::split(frame, rgbChannels);
+		cv::split(blurImage, rgbChannels);
 		parallelBackgroundAveraging(&rgbChannels, false, &m_currentResult);
 		//###############################################
 		//POST-PROCESSING HERE
@@ -65,14 +59,13 @@ void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 		m_currentResult.copyTo(m_lastResult);
 		++m_iteration;
 }
-
 void PBASFrameProcessor::parallelBackgroundAveraging(std::vector<cv::Mat>* rgb,  bool wGC,cv::Mat * pbasR) const
 {	
 	cv::Mat pbasResult1, pbasResult2, pbasResult3;
 
-	std::thread t1(&PBAS::process, m_pbas1, &rgb->at(0), &pbasResult1, m_gradMagnMap);
-	std::thread t2(&PBAS::process, m_pbas2, &rgb->at(1), &pbasResult2, m_gradMagnMap);
-	std::thread t3(&PBAS::process, m_pbas3, &rgb->at(2), &pbasResult3, m_gradMagnMap);
+	std::thread t1(&PBAS::process, m_pbas1, &rgb->at(0), &pbasResult1, m_gradMagnMap, m_noiseMap);
+	std::thread t2(&PBAS::process, m_pbas2, &rgb->at(1), &pbasResult2, m_gradMagnMap, m_noiseMap);
+	std::thread t3(&PBAS::process, m_pbas3, &rgb->at(2), &pbasResult3, m_gradMagnMap, m_noiseMap);
 
 	if (t1.joinable() && t2.joinable() && t3.joinable())
 	{
@@ -94,12 +87,9 @@ void PBASFrameProcessor::parallelBackgroundAveraging(std::vector<cv::Mat>* rgb, 
 	t3.~thread();
 
 }
-
 void PBASFrameProcessor::process(cv::Mat &)
 {
 }
-
-
 void PBASFrameProcessor::resetProcessor()
 {
 	// performs reset on PBAS members: background model is deleted etc.
@@ -112,10 +102,8 @@ void PBASFrameProcessor::resetProcessor()
 	m_pbas2->reset();
 	m_pbas3->reset();
 }
-
 std::auto_ptr<cv::Mat> PBASFrameProcessor::getBackgroundDynamics() const
 {
-	
 	std::auto_ptr<cv::Mat> bgdyn(new cv::Mat());
 	*bgdyn = m_pbas1->getSumMinDistMap().clone();
 	*bgdyn = bgdyn->mul((float)1.0 / m_pbas1->getRuns());
