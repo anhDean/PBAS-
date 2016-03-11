@@ -4,25 +4,34 @@ const std::vector<int> LBSP::LBSP_PATTERN_ORDER_X = { 0, 2, 4, 1, 2, 3, 0, 1, 3,
 const std::vector<int> LBSP::LBSP_PATTERN_ORDER_Y = { 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4 }; // Y-Coordinate order for LBSP processing
 const int LBSP::LBSP_NUM = 16;
 
-LBSP::LBSP(const cv::Mat& input, const float& thresh) : m_nRows(input.rows), m_nCols(input.cols), m_thresh(thresh), m_LBSPArray(input.rows * input.cols)
+LBSP::LBSP(const cv::Mat& input, float intraThresh, float interThresh) : m_nRows(input.rows), m_nCols(input.cols), m_intraThresh(intraThresh), m_LBSPArray(input.rows * input.cols), m_interTresh(0.3)
 {
-
 	CV_Assert(input.type() == CV_8UC1 || input.type() == CV_8UC3);
 	setLBSPArray(input);
 }
-
 void LBSP::init(const cv::Mat& input)
 {
 	
 	CV_Assert(input.type() == CV_8UC1 || input.type() == CV_8UC3);
 	if (!m_LBSPArray.empty()) m_LBSPArray.clear();
-	m_thresh = 0.3;
+	m_intraThresh = 25;
+	m_interTresh = 0.3;
 	m_nCols = input.cols;
 	m_nRows = input.rows;
 	m_LBSPArray.resize(m_nCols * m_nRows);
 	setLBSPArray(input);
 
 }
+
+LBSP::LBSP(const cv::Mat& input, const cv::Mat& formerInput, float intraThresh, float interThresh) : m_nRows(input.rows), m_nCols(input.cols), m_intraThresh(intraThresh), m_LBSPArray(input.rows * input.cols), m_interTresh(interThresh)
+{
+	CV_Assert(input.type() == CV_8UC1 || input.type() == CV_8UC3);
+	setLBSPArray(input, formerInput);
+}
+
+
+
+
 LBSP& LBSP::operator=(const LBSP& b) // returns matrix (in vector representation) of inter-frame LBSP
 {
 	if (this != &b)
@@ -30,7 +39,8 @@ LBSP& LBSP::operator=(const LBSP& b) // returns matrix (in vector representation
 		m_LBSPArray.clear();
 		m_nRows = b.m_nRows;
 		m_nCols = b.m_nCols;
-		m_thresh = b.m_thresh;
+		m_intraThresh = b.m_intraThresh;
+		m_interTresh = b.m_interTresh;
 		setLBSPArray(b.m_LBSPArray);
 	}
 	return *this;
@@ -51,7 +61,6 @@ void LBSP::setLBSPArray(const std::vector<BinaryStr>& lbsp_array)
 }
 void LBSP::setLBSPArray(const cv::Mat &input)
 {	
-
 	CV_Assert((input.type() == CV_8UC1) || (input.type() == (CV_8UC3)) && input.rows == m_nRows && input.cols == m_nCols && m_LBSPArray.size() == m_nCols * m_nRows);
 
 	// pad image to get safe patches
@@ -64,6 +73,23 @@ void LBSP::setLBSPArray(const cv::Mat &input)
 			m_LBSPArray.at(y* m_nCols + x) = calcLBSPXY(padded_input, x, y);
 		}
 	}
+
+}
+void LBSP::setLBSPArray(const cv::Mat &input, const cv::Mat &formerInput)
+{
+	CV_Assert((input.type() == CV_8UC1) || (input.type() == (CV_8UC3)) && input.rows == m_nRows && input.cols == m_nCols && m_LBSPArray.size() == m_nCols * m_nRows);
+
+	// pad image to get safe patches
+	cv::Mat padded_input = padMat(input);
+
+	for (int y = 0; y < m_nRows; ++y)
+	{
+		for (int x = 0; x < m_nCols; ++x)
+		{
+			m_LBSPArray.at(y* m_nCols + x) = calcLBSPXY(padded_input, formerInput, x, y);
+		}
+	}
+
 
 }
 BinaryStr LBSP::calcLBSPXY(const cv::Mat &im, const int &x, const int &y) const
@@ -85,7 +111,8 @@ BinaryStr LBSP::calcLBSPXY(const cv::Mat &im, const int &x, const int &y) const
 		for (int i = 0; i < LBSP_PATTERN_ORDER_X.size(); ++i)
 		{
 			l1_diff = std::abs(patchXY.at<uchar>(LBSP_PATTERN_ORDER_Y[i], LBSP_PATTERN_ORDER_X[i]) - centerVec);
-			tmp = (l1_diff <= m_thresh * centerVec) ? true : false;  // calculate value for processed pixel
+
+			tmp = (l1_diff > m_intraThresh) ? true : false;  // calculate value for processed pixel
 			out.push_back(tmp);
 		}
 	}
@@ -97,26 +124,70 @@ BinaryStr LBSP::calcLBSPXY(const cv::Mat &im, const int &x, const int &y) const
 		for (int i = 0; i < LBSP_PATTERN_ORDER_X.size(); ++i)
 		{
 			cv::absdiff(centerVec, patchXY.at<cv::Vec3b>(LBSP_PATTERN_ORDER_Y[i], LBSP_PATTERN_ORDER_X[i]), l1_diff);
-			tmp = (cv::norm(l1_diff, CV_L1) <= m_thresh * cv::norm(centerVec, CV_L1)) ? true : false;
+			tmp = (cv::mean(l1_diff)[0] > m_intraThresh) ? true : false;
+			
 			out.push_back(tmp);
 		}
 	}
 
 	return out;
 }
-void LBSP::setThreshold(const float& newVal)
+BinaryStr LBSP::calcLBSPXY(const cv::Mat &im, const cv::Mat &old_im, const int &x, const int &y) const
 {
-	m_thresh = newVal;
+	const int padding = 2, centerX = 2, centerY = 2; // assume 5x5 patches
+	CV_Assert((im.type() == CV_8UC1 || im.type() == CV_8UC3) && (m_nCols + 2 * padding == im.cols) && (m_nRows + 2 * padding == im.rows)); // assume padding
+
+	bool tmp;
+	BinaryStr out;
+	cv::Mat patchXY;
+
+	patchXY = im(cv::Range(y, y + padding * 2 + 1), cv::Range(x, x + padding * 2 + 1)).clone(); // range [0,N) : N is not included!
+
+	if (im.type() == CV_8UC1)
+	{
+		uchar l1_diff;
+		uchar centerVec = old_im.at<uchar>(y, x);
+
+		for (int i = 0; i < LBSP_PATTERN_ORDER_X.size(); ++i)
+		{
+			l1_diff = std::abs(patchXY.at<uchar>(LBSP_PATTERN_ORDER_Y[i], LBSP_PATTERN_ORDER_X[i]) - centerVec);
+
+			tmp = (l1_diff > m_interTresh * centerVec) ? true : false;  // calculate value for processed pixel
+			out.push_back(tmp);
+		}
+	}
+	else if (im.type() == CV_8UC3)
+	{
+		cv::Mat l1_diff;
+		cv::Vec3b centerVec = old_im.at<cv::Vec3b>(y, x);
+
+		for (int i = 0; i < LBSP_PATTERN_ORDER_X.size(); ++i)
+		{
+			cv::absdiff(centerVec, patchXY.at<cv::Vec3b>(LBSP_PATTERN_ORDER_Y[i], LBSP_PATTERN_ORDER_X[i]), l1_diff);
+			tmp = (cv::mean(l1_diff)[0] > m_interTresh * cv::mean(centerVec)[0]) ? true : false;
+
+			out.push_back(tmp);
+		}
+	}
+
+	return out;
+}
+
+
+
+void LBSP::setIntraThreshold(float newVal)
+{
+	m_intraThresh = newVal;
 }
 // getters
 const BinaryStr& LBSP::getLBSPXY(const int& x, const int&y) const // returns binary string struct at position X (col),Y (row)
 {
 	CV_Assert(!m_LBSPArray.empty());
-	return m_LBSPArray[x + y * m_nRows];
+	return m_LBSPArray[y * m_nCols  + x ];
 }
-const float& LBSP::getThreshold() const
+const float& LBSP::getIntraThreshold() const
 {
-	return m_thresh;
+	return m_intraThresh;
 }
 const int& LBSP::getRows() const
 {
@@ -156,7 +227,7 @@ cv::Mat LBSP::calcLBSPArrayDiff(const LBSP&a, const LBSP &b) // returns hammingw
 cv::Mat LBSP::LBSP2HWArray(const std::vector<BinaryStr>&a, int rows, int cols)
 {
 	CV_Assert(a.size() == rows * cols);
-	uchar count, iteration = 0;
+	int count;
 	cv::Mat out(rows, cols, CV_8UC1, cv::Scalar(0));
 
 	for (int y = 0; y < rows; ++y)
@@ -166,13 +237,41 @@ cv::Mat LBSP::LBSP2HWArray(const std::vector<BinaryStr>&a, int rows, int cols)
 			count = 0;
 			for (int k = 0; k < LBSP_NUM; ++k)
 			{
-				if (a.at(y * x + x).at(k) == 1)
+				if (a.at(y * cols + x).at(k) == true)
 					count += 1;
 			}
-			out.ptr<uchar>(y)[x] = count;
+			out.at<uchar>(y,x) = count;
 		}
 	}
 	return out;
+}
+
+BinaryStr LBSP::calcLBSPDiff(const BinaryStr& a, const BinaryStr& b)  // calculates difference string between two  binary string representations (pixel-wise inter-frame LBSP)
+{
+	BinaryStr result(16);
+	CV_Assert(a.size() == b.size());
+	for (int i = 0; i< a.size(); ++i) {
+		result.at(i) =a.at(i) ^ b.at(i);
+	}
+	return result;
+}
+cv::Mat LBSP::padMat(const cv::Mat& input, int padding)
+{
+	cv::Mat padded_input;
+	padded_input.create(input.rows + 2 * padding, input.cols + 2 * padding, input.type());
+	padded_input.setTo(cv::Scalar::all(0));
+	input.copyTo(padded_input(cv::Rect(padding, padding, input.cols, input.rows)));
+	return padded_input;
+}
+void LBSP::displayPatchXY(cv::Mat in, int upper_leftX, int upper_leftY, int patchSize, bool disp)
+{
+	cv::Mat padded_input = padMat(in);
+	std::cout << padded_input(cv::Rect(upper_leftX, upper_leftY, patchSize, patchSize)) << std::endl;
+	if (disp)
+	{
+		cv::namedWindow("patch", CV_WINDOW_AUTOSIZE);
+		cv::imshow("patch", in(cv::Rect(upper_leftX, upper_leftY, patchSize, patchSize)));
+	}
 }
 void LBSP::displayLBSP(const BinaryStr &x) {
 	for (int i = 0; i< x.size(); ++i) {
@@ -187,29 +286,20 @@ void LBSP::displayLBSPPatch(const BinaryStr &x) {
 	}
 	std::cout << out << std::endl;
 }
-BinaryStr LBSP::calcLBSPDiff(const BinaryStr& a, const BinaryStr& b)  // calculates difference string between two  binary string representations (pixel-wise inter-frame LBSP)
+
+
+const std::vector<BinaryStr>& LBSP::getLBSPArray() const
 {
-	BinaryStr result(16);
-	CV_Assert(a.size() == b.size());
-	for (int i = 0; i< a.size(); ++i) {
-		result.at(i) = a.at(i) ^ b.at(i);
-	}
-	return result;
+	return m_LBSPArray;
 }
-cv::Mat LBSP::padMat(const cv::Mat& input, int padding)
+
+const float& LBSP::getInterThreshold() const
 {
-	cv::Mat padded_input;
-	padded_input.create(input.rows + 2 * padding, input.cols + 2 * padding, input.type());
-	padded_input.setTo(cv::Scalar::all(0));
-	input.copyTo(padded_input(cv::Rect(padding, padding, input.cols, input.rows)));
-	return padded_input;
+	return m_interTresh;
 }
-void LBSP::displayPatchXY(cv::Mat in, int upper_leftX, int upper_leftY, int patchSize, bool disp)
+
+
+void LBSP::setInterThreshold(float newVal)
 {
-	std::cout << in(cv::Rect(upper_leftX, upper_leftY, patchSize, patchSize)) << std::endl;
-	if (disp)
-	{
-		cv::namedWindow("patch", CV_WINDOW_AUTOSIZE);
-		cv::imshow("patch", in(cv::Rect(upper_leftX, upper_leftY, patchSize, patchSize)));
-	}
+	m_interTresh = newVal;
 }
