@@ -148,3 +148,65 @@ bool FileHandler::createDirectory(const std::string dir) const
 	fs::create_directory(dir);
 	return true;
 }
+
+
+
+
+bool FileHandler::process_folder(std::string inputFolder, std::string outputFolder, FrameProcessor* processor)
+{
+	// get file name
+	std::string tmp_inputFile, tmp_outputFile, windowName = outputFolder;
+	cv::Mat input, output;
+	cv::Mat tmp_bgDynamics, m, tmp_bgNoise, tmp_gradMagnMap;
+
+	double minVal, maxVal, epsilon = 1e-6;
+
+	for (fs::directory_iterator it(inputFolder), end; it != end; ++it)
+	{
+
+		if (fs::is_regular_file(it->path()) && (it->path().filename().string().find(m_inputSuffix) != std::string::npos))
+		{
+			tmp_inputFile = it->path().filename().string();
+			tmp_outputFile = getOutputFilename(tmp_inputFile);
+		}
+		input = cv::imread(it->path().string(), CV_LOAD_IMAGE_COLOR);
+		output.create(input.size(), CV_8U);
+		processor->process(input, output);
+
+		if (m_showProcessing)
+		{
+			cv::minMaxLoc(*(processor->getBackgroundDynamics()), &minVal, &maxVal);				
+			tmp_bgDynamics =  *(processor->getBackgroundDynamics()); // TODO: find a way to normalize matrix such that it can be visualized
+
+			cv::minMaxLoc(processor->getNoiseMap(), &minVal, &maxVal);
+			tmp_bgNoise = processor->getNoiseMap().mul(cv::saturate_cast<double>(1 / (maxVal + epsilon)));
+
+			cv::minMaxLoc(processor->getGradMagnMap(), &minVal, &maxVal);
+			tmp_gradMagnMap = processor->getGradMagnMap().mul(cv::saturate_cast<double>(1 / (maxVal + epsilon)));
+
+			cv::imshow(windowName, output);
+			cv::imshow(windowName + " Input", input);
+			cv::imshow("Background dynamics", tmp_bgDynamics);
+			cv::imshow("Background Noise", tmp_bgNoise);
+			cv::imshow("Gradient magnitude map", tmp_gradMagnMap);
+			if (cv::waitKey(1) == 27)  // 27 = ESC
+				break;
+		}
+		cv::imwrite(outputFolder + "\\" + tmp_outputFile, output);
+	}
+	processor->resetProcessor();
+	input.release();
+	output.release();
+	tmp_bgNoise.release();
+	tmp_bgDynamics.release();
+	cv::destroyAllWindows();
+	return true;
+}
+
+bool FileHandler::process_folder(int idx, FrameProcessor* processor)
+{
+	std::string inputFolder = m_inputFolders[idx];
+	std::string outputFolder = m_outputFolders[idx];
+	process_folder(inputFolder, outputFolder, processor);
+	return true;
+}

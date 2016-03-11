@@ -4,9 +4,10 @@
 #include<string>
 #include<algorithm>
 #include<opencv2/opencv.hpp>
+#include "FrameProcessor.h"
 #include<Windows.h> // used Only for sleep function in createDirectories
 
-namespace fs =  std::tr2::sys;
+namespace fs = std::tr2::sys;
 
 class FileHandler
 {
@@ -32,11 +33,8 @@ public:
 	FileHandler(const std::string& inpRt, const std::string& outRt, int rt_depth, bool setupDirectories);
 	// TODO: new constructor for videos -> use cv:: videocapture FileHandler(captureobject, outputdirectory)
 	// TODO: process_video member function -> for processing videos cv::Mat getFrame() -> process -> write
-	template<class FrameProcessorClass>
-	bool process_folder(std::string inputFolder, std::string outputFolder, FrameProcessorClass* processor);
-	
-	template<class FrameProcessorClass>
-	bool process_folder(int idx, FrameProcessorClass* processor);
+	bool process_folder(std::string inputFolder, std::string outputFolder, FrameProcessor* processor);
+	bool process_folder(int idx, FrameProcessor* processor);
 
 	
 	const size_t& getFolderCount() const;
@@ -53,66 +51,3 @@ public:
 
 	bool createDirectory(const std::string dir) const;
 };
-
-
-
-
-
-// template member functions defined in header
-template<class FrameProcessorClass>
-bool FileHandler::process_folder(std::string inputFolder, std::string outputFolder, FrameProcessorClass* processor) 
-{
-	// get file name
-	std::string tmp_inputFile, tmp_outputFile, windowName = outputFolder;
-	cv::Mat input, output;
-	cv::Mat tmp_bgDynamics,m, tmp_bgNoise;
-	
-	double minVal, maxVal, epsilon = 1e-6;
-
-	for (fs::directory_iterator it(inputFolder), end; it != end; ++it)
-	{
-
-		if (fs::is_regular_file(it->path()) && (it->path().filename().string().find(m_inputSuffix) != std::string::npos))
-		{
-			tmp_inputFile = it->path().filename().string();
-			tmp_outputFile = getOutputFilename(tmp_inputFile);
-		}
-		input = cv::imread(it->path().string(), CV_LOAD_IMAGE_COLOR);
-		output.create(input.size(), CV_8U);
-		processor->process(input, output);
-
-		if(m_showProcessing)
-		{
-			cv::minMaxLoc(processor->getBackgroundDynamics(), &minVal, &maxVal);
-			tmp_bgDynamics = processor->getBackgroundDynamics().mul(cv::saturate_cast<float>(1/(maxVal + epsilon)));
-			
-			cv::minMaxLoc(processor->getNoiseMap(), &minVal, &maxVal);
-			tmp_bgNoise = processor->getNoiseMap().mul(cv::saturate_cast<float>(1/(maxVal + epsilon)));
-
-			cv::imshow(windowName, output);
-			cv::imshow(windowName + " Input", input);
-			cv::imshow("Background dynamics", tmp_bgDynamics);
-			cv::imshow("Background Noise", tmp_bgNoise);
-			if (cv::waitKey(1) == 27)  // 27 = ESC
-				break;
-		}
-		cv::imwrite(outputFolder + "\\" + tmp_outputFile, output);
-	}
-	processor->resetProcessor();
-	input.release();
-	output.release();
-	tmp_bgNoise.release();
-	tmp_bgDynamics.release();
-	cv::destroyAllWindows();
-	return true;
-}
-template<class FrameProcessorClass>
-bool FileHandler::process_folder(int idx, FrameProcessorClass* processor)
-{
-	std::string inputFolder = m_inputFolders[idx];
-	std::string outputFolder = m_outputFolders[idx];
-	process_folder(inputFolder,  outputFolder, processor):
-	return true;
-}
-
-

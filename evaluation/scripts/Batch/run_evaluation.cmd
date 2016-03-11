@@ -1,5 +1,4 @@
 SETLOCAL ENABLEDELAYEDEXPANSION
-
 set SCRIPTFOLDER=C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplication2\code\PBAS-\evaluation\scripts
 set DATA_ROOT=E:\Datasets\datasets2012\dataset
 set EVALFILE=%DATA_ROOT%\cm.txt
@@ -20,30 +19,37 @@ set FIRSTRUN=1
 
 set CSVFILE=%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_csv.dat
 
-for /l %%x in (15, 5, 50) do (
+for /l %%x in (15, 5, 75) do (
 
 set PARAMVAL=%%x
 
+rem use following code to pass floating point values
+rem set /a DIV=!PARAMVAL!/10
+rem set /a MOD=!PARAMVAL!%%10
+rem echo !DIV!.!MOD!
+
+
 pushd %PYTHONFOLDER%
-rem start /wait %BATCHFOLDER%\set_param.cmd "%PARAMETERFILE%" "(%PARAMTYPE%, %PARAMNAME%, !PARAMVAL!)"
+start /wait %BATCHFOLDER%\set_param.cmd "%PARAMETERFILE%" "(%PARAMTYPE%, %PARAMNAME%, !PARAMVAL!)"
 popd
 
 rem rebuild exe
-rem start /wait rebuild_solution.cmd
+start /wait rebuild_solution.cmd
 
 rem process dataset
-rem call %PROCESSOR% %DATA_ROOT% %OUTPUT_ROOT%
+call %PROCESSOR% %DATA_ROOT% %OUTPUT_ROOT%
 
 rem run evaluation
 pushd %MATLABFOLDER%
-rem start /wait %BATCHFOLDER%\evaluate_results.cmd %EVALCODEDIR% %DATA_ROOT% %EVAL_OUTPUT%
-rem timeout 1800
+start /wait %BATCHFOLDER%\evaluate_results.cmd %EVALCODEDIR% %DATA_ROOT% %EVAL_OUTPUT%
+timeout 1800
 popd
 
 rem write eval results to csv file
 pushd %PYTHONFOLDER%
 start /wait %BATCHFOLDER%\write_csvfile.cmd "%EVALFILE%" "%PARAMNAME%" "!PARAMVAL!" "!FIRSTRUN!"
 popd
+
 set FIRSTRUN=0
 )
 
