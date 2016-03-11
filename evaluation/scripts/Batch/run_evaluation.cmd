@@ -17,6 +17,7 @@ set PARAMTYPE=int
 set PARAMNAME=N
 set FIRSTRUN=1
 
+set SOTA_RESULTS=%SCRIPTFOLDER%\..\init\state_of_the_art_csv.dat
 set CSVFILE=%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_csv.dat
 
 for /l %%x in (15, 5, 75) do (
@@ -55,5 +56,5 @@ set FIRSTRUN=0
 
 rem generate plots
 pushd %MATLABFOLDER%
-matlab /r "filename='%CSVFILE%';generatePlotsFromCSV"
+matlab /r "filename='%CSVFILE%';sota_file='%SOTA_RESULTS%' ;generatePlotsFromCSV"
 popd
