@@ -11,7 +11,7 @@ class LBSP
 private:
 	// data member
 	int m_nRows, m_nCols;
-	float m_thresh;
+	float m_intraThresh, m_interTresh;
 	std::vector<BinaryStr> m_LBSPArray;	// represents matrix with LBSPs
 	
 	// static data member
@@ -21,23 +21,29 @@ private:
 	
 	// member funtions
 	BinaryStr calcLBSPXY(const cv::Mat &im, const int &x, const int &y) const; // calculates LBSP at given x,y coordinate
+	BinaryStr calcLBSPXY(const cv::Mat &im, const cv::Mat &old_im, const int &x, const int &y) const;
 	void init(const cv::Mat& input);
 
 public:
 	//constructor, destructor
-	LBSP(const cv::Mat& input, const float& thresh = 0.3); // constructor: generates matrix of LBSP pattern
+	LBSP(const cv::Mat& input, float intraThresh = 25, float interThresh = 0.3); // constructor: generates matrix of LBSP patternl
+	LBSP(const cv::Mat& input, const cv::Mat& formerInput, float intraThresh = 25, float interThresh = 0.3); // constructor: generates inter frame lbsp with reference value from old frame
 	LBSP& operator=(const LBSP& b); // assignment operator
 	~LBSP();
 
 	// getters
 	const int& getCols() const;
 	const int& getRows() const;
-	const float& getThreshold() const;
+	const float& getIntraThreshold() const;
+	const float& getInterThreshold() const;
+	const std::vector<BinaryStr>& getLBSPArray() const;
 	const BinaryStr& getLBSPXY(const int& x, const int&y) const;
 	// setters
-	void setThreshold(const float& newVal);
+	void setIntraThreshold(float newVal);
+	void setInterThreshold(float newVal);
 	void setLBSPArray(const std::vector<BinaryStr>& lbsp_array);
-	void setLBSPArray(const cv::Mat &input); // calculates LBSParray and writes into member 
+	void setLBSPArray(const cv::Mat &input); // calculates LBSParray and writes into member
+	void setLBSPArray(const cv::Mat &input, const cv::Mat &formerInput); // calculates LBSParray and writes into member 
 	// display function
 	void displayLBSPXY(const int &x, const int &y) const;
 
