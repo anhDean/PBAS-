@@ -1,18 +1,15 @@
 #include "PBASFrameProcessor.h"
-#include "LBSP.h"
-
 
 
 PBASFrameProcessor::PBASFrameProcessor(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate, 
 	double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound) : 
-	m_iteration(0), m_pbas1(new PBAS()), m_pbas2(new PBAS()), m_pbas3(new PBAS()), m_gradMagnMap(new cv::Mat()) // double newLabelThresh, int newNeighbour) //const for graphCuts
+	m_iteration(0), m_pbas1(new PBAS()), m_pbas2(new PBAS()), m_pbas3(new PBAS()) // double newLabelThresh, int newNeighbour) //const for graphCuts
 
 {
 	setDefaultValues(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, samplingLowerBound, samplingUpperBound);
 }
 PBASFrameProcessor::~PBASFrameProcessor(void)
 { 	
-	delete m_gradMagnMap;
 	delete m_pbas1;
 	delete m_pbas2;
 	delete m_pbas3;
@@ -37,7 +34,7 @@ void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 			m_lastResult = cv::Mat::zeros(frame.size(), CV_8U);
 			m_lastResultPP = cv::Mat::zeros(frame.size(), CV_8U);
 			m_noiseMap = cv::Mat::zeros(frame.size(), CV_64F);
-			m_gradMagnMap->create(frame.size(), CV_32F);
+			m_gradMagnMap.create(frame.size(), CV_32F);
 		}
 		updateGradMagnMap(frame);
 		cv::Mat blurImage;
@@ -97,7 +94,7 @@ void PBASFrameProcessor::resetProcessor()
 	m_lastResult.release();
 	m_lastResultPP.release();
 	m_noiseMap.release();
-	m_gradMagnMap->release();
+	m_gradMagnMap.release();
 	m_pbas1->reset();
 	m_pbas2->reset();
 	m_pbas3->reset();
@@ -109,41 +106,5 @@ std::auto_ptr<cv::Mat> PBASFrameProcessor::getBackgroundDynamics() const
 	*bgdyn = bgdyn->mul((float)1.0 / m_pbas1->getRuns());
 	return bgdyn;
 }
-const cv::Mat& PBASFrameProcessor::getNoiseMap() const
-{
-	return m_noiseMap;
-}
-const cv::Mat&  PBASFrameProcessor::getGradMagnMap() const
-{
-	return *m_gradMagnMap;
-}
-void PBASFrameProcessor::updateNoiseMap()
-{
-	cv::Mat tmp;
-	cv::bitwise_xor(m_lastResult, m_currentResult, tmp);
 
-	for (int y = 0; y < m_noiseMap.rows; ++y)
-	{
-		for (int x = 0; x < m_noiseMap.cols; ++x)
-		{
-			if (tmp.at<uchar>(y, x) == PBAS::BACKGROUND_VAL || 
-				(tmp.at<uchar>(y, x) == PBAS::FOREGROUND_VAL && (m_lastResultPP.at<uchar>(y, x) == PBAS::FOREGROUND_VAL || m_currentResultPP.at<uchar>(y, x) == PBAS::FOREGROUND_VAL)))
-			{
-				m_noiseMap.at<double>(y, x) -= 0.2;
-				m_noiseMap.at<double>(y, x) = (m_noiseMap.at<double>(y, x) < 0.0) ? 0 : m_noiseMap.at<double>(y, x);
-			}
-			else
-				m_noiseMap.at<double>(y, x) += 1;
-		}
-	}
-}
-void PBASFrameProcessor::updateGradMagnMap(const cv::Mat& inputFrame)
-{
-	cv::Mat sobelX, sobelY, inputGray;
-	cv::cvtColor(inputFrame, inputGray,CV_BGR2GRAY);
-	// features: gradient magnitude and direction and pixel intensities	
-	cv::Sobel(inputGray, sobelX, CV_32F, 1, 0, 3, 1, 0.0); // get gradient magnitude for dx
-	cv::Sobel(inputGray, sobelY, CV_32F, 0, 1, 3, 1, 0.0); // get gradient magnitude for dy
-	cv::cartToPolar(sobelX, sobelY, *m_gradMagnMap, sobelY, true); // convert cartesian to polar coordinates
-}
 

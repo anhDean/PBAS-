@@ -47,7 +47,7 @@ private:
 
 	void checkValid(int &x, int &y);
 	void createRandomNumberArray();
-	void getFeatures(PBASFeature& descriptor, cv::Mat* intImg, const cv::Mat* gradMag);
+	void getFeatures(PBASFeature& descriptor, cv::Mat* intImg, const cv::Mat& gradMag);
 	void updateRThresholdXY(int x, int y, float avg_dmin);
 	void updateSubsamplingXY(int x, int y, int bg_value, float avg_dmin);
 	double calcDistanceXY(const PBASFeature& imgFeatures, int x, int y, int index) const;
@@ -61,7 +61,7 @@ public:
 	void initialization(int N, double defaultR, int minHits, int defaultSubsampling, double alpha, double beta, double RScale, double RIncDec, double subsamplingIncRate, double subsamplingDecRate, int samplingLowerBound, int samplingUpperBound);
 	void reset();
 
-	bool process(const cv::Mat *input, cv::Mat* output, const cv::Mat* gradMag, const cv::Mat& noiseMap);
+	bool process(const cv::Mat *input, cv::Mat* output, const cv::Mat& gradMag, const cv::Mat& noiseMap);
 	void setAlpha(double alph);
 	void setBeta(double bet);
 

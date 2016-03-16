@@ -20,11 +20,6 @@ PBASFeature::PBASFeature()
 {
 }
 
-float BackgroundFeature::getDistance() const
-{
-	return 0.0;
-}
-
 PBASFeature::~PBASFeature()
 {
 	free();
