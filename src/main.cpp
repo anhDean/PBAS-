@@ -5,6 +5,10 @@
 #include"PBASFrameProcessor.h"
 #include<thread>
 #include"LBSP.h"
+#include "BackgroundFeature.h"
+#include "MoGSegmenter.h"
+#include "MoGFrameProcessor.h"
+#include "ColourFeature.h"
 
 #if _DEBUG
 #define LOG_MESSAGE(x) std::cout << __FILE__<< "(" << __LINE__ << ")" << (x) << std::endl
@@ -86,7 +90,7 @@ int main(int argc, char** argv)
 		delete frame_proc_arr[k];
 	}
 
-	std::cout << "Time needed for processing: " << (cv::getTickCount() - t_init) / (cv::getTickFrequency() * 60) << "min" << std::endl;
+	std::cout << "Time needed for processing: " << ((cv::getTickCount() - t_init) / cv::getTickFrequency()) / 60 << "min" << std::endl;
 
 #endif
 #ifdef _FOLDER
@@ -111,7 +115,8 @@ int main(int argc, char** argv)
 
 	const std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\baseline\\highway\\input";
 	const std::string outputFolder = "E:\\Test";
-	FrameProcessor* processor = new  PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
+	//FrameProcessor* processor = new  PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
+	FrameProcessor* processor = new MoGFrameProcessor(4, ColourFeature::NUM_FEATURES);
 	FileHandler fh;
 	fh.setDisplayFlag(true);
 	fh.process_folder(inputFolder, outputFolder, processor);
@@ -124,7 +129,6 @@ int main(int argc, char** argv)
 #ifdef _CAMERA
 	FrameProcessor *processor = new PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
 	
-
 	cv::VideoCapture cap(0);// open default camera
 	if (!cap.isOpened())
 		return -1;
@@ -144,14 +148,6 @@ int main(int argc, char** argv)
 
 #ifdef _PROTOTYPING
 	// block for experimenting, design testing
-	cv::Mat test_frame = cv::imread("C:\\Users\\Public\\Pictures\\Sample Pictures\\Koala.jpg");
-	std::string windowName = "test image";
-
-	LBSP l1(test_frame);
-	l1.displayLBSPXY(10, 10);
-	LBSP::displayPatchXY(test_frame, 10, 10, 500, true);
-
-	cv::waitKey(0);
 
 #endif
 

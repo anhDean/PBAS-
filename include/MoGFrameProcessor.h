@@ -8,8 +8,9 @@
 class MoGFrameProcessor : public FrameProcessor
 {
 private:
+	int m_K, m_dim;
 	cv::Mat m_gradMagnMap;
-	MoGSegmenter<ColourFeature> processor;
+	std::auto_ptr<MoGSegmenter<ColourFeature>> m_processor;
 public:
 	MoGFrameProcessor(int K, int dim, float decisionThresh = 2.5, float alpha = 0.075, float rho = 0.01);
 	virtual ~MoGFrameProcessor();

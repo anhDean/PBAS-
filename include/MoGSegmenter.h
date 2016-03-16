@@ -30,7 +30,7 @@ public:
 	float getRho() const;
 
 	const std::vector<std::vector<MoGFeature> >& getMeanMat() const;
-	const cv::Mat& getStdDevMat() const;
+	std::auto_ptr<cv::Mat> getVarianceTraceMat() const;
 	const cv::Mat& getWeightMat() const;
 
 
@@ -230,9 +230,34 @@ const std::vector<std::vector<MoGFeature> >& MoGSegmenter<MoGFeature>::getMeanMa
 	return m_meanTensor;
 }
 template <typename MoGFeature>
-const cv::Mat& MoGSegmenter<MoGFeature>::getStdDevMat() const
+std::auto_ptr<cv::Mat> MoGSegmenter<MoGFeature>::getVarianceTraceMat() const
 {
-	return m_stdDevMat;
+	std::auto_ptr<cv::Mat> result_ptr(new cv::Mat(m_height, m_width, CV_32F));
+	result_ptr->setTo(cv::Scalar(0.0));
+	double min, max;
+
+
+	for (int k = 0; k < m_K; ++k)
+	{
+		for (int y = 0; y < m_height; ++y)
+		{
+			for (int x = 0; x < m_width; ++x)
+			{
+
+				for (int c = 0; c < m_nFeatures; ++c)
+				{
+					result_ptr->at<float>(y, x) += cv::saturate_cast<float>(m_weightTensor.at(k).at(y * m_width + x) * m_varianceTensor.at(k).at(y * m_width * m_nFeatures + x * m_nFeatures + c));
+				}
+			}
+
+		}
+	}
+	
+
+	cv::minMaxIdx(*result_ptr, &min, &max);
+	cv::convertScaleAbs(*result_ptr, *result_ptr, 255 / max);
+
+	return result_ptr;
 }
 template <typename MoGFeature>
 const cv::Mat& MoGSegmenter<MoGFeature>::getWeightMat() const
