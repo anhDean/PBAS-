@@ -60,7 +60,8 @@ void PBAS::createRandomNumberArray()
 	randomY.clear();
 	randomDist.clear();
 	
-	
+	cv::theRNG().state = 0;
+
 	//pre calculate random number 
 	for(int l = 0; l < NUM_RANDOMGENERATION; l++)
 	{
@@ -71,7 +72,7 @@ void PBAS::createRandomNumberArray()
 	}
 }
 
-bool PBAS::process(const cv::Mat *input, cv::Mat* output, const cv::Mat* gradMag, const cv::Mat& noiseMap)
+bool PBAS::process(const cv::Mat *input, cv::Mat* output, const cv::Mat& gradMag, const cv::Mat& noiseMap)
 {
 	PBASFeature imgFeatures; // temp: hold temporary image features (3 matrices)
 	cv::Mat blurImage = input->clone();
@@ -250,10 +251,10 @@ void PBAS::updateSubsamplingXY(int x, int y, int seg_value, float avg_dmin) {
 	else if (m_subSamplingMap.at<float>(y, x) > m_samplingUpperBound)
 		m_subSamplingMap.at<float>(y, x) = m_samplingUpperBound;
 }
-void PBAS::getFeatures(PBASFeature& descriptor, cv::Mat* intImg, const cv::Mat* gradMag)
+void PBAS::getFeatures(PBASFeature& descriptor, cv::Mat* intImg, const cv::Mat& gradMag)
 {
 	// shared variable: gradMagnMap
-	descriptor.gradMag = gradMag->clone();
+	descriptor.gradMag = gradMag.clone();
 	intImg->copyTo(descriptor.pxIntensity);
 }
 
