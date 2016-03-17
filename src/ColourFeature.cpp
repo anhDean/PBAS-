@@ -1,5 +1,7 @@
 #include "ColourFeature.h"
 
+float ColourFeature::fg_colorWeight = 1;
+
 ColourFeature::ColourFeature()
 {
 	cv::RNG randomGenerator;
@@ -8,9 +10,11 @@ ColourFeature::ColourFeature()
 	m_G = cv::saturate_cast<uchar>(randomGenerator.uniform(0, 255));
 }
 
-ColourFeature::ColourFeature(int R, int G, int B) : m_R(R), m_B(B), m_G(G)
+ColourFeature::ColourFeature(int R, int G, int B) 
 {
-
+	m_R = R;
+	m_B = B;
+	m_G = G;
 }
 
 ColourFeature::ColourFeature(const ColourFeature& other)
@@ -119,11 +123,19 @@ const float& ColourFeature::operator [] (int position) const
 }
 
 
-double ColourFeature::calcDistance(const ColourFeature& first, const ColourFeature& second)
+double ColourFeature::calcDistance(const ColourFeature& first, const ColourFeature& second, int Lnorm)
 {
 	// L2 distance
 	double result;
-	result = std::sqrt(std::pow(std::abs(first.m_B - second.m_B), 2) + std::pow(std::abs(first.m_G - second.m_G), 2) + std::pow(std::abs(first.m_R - second.m_R), 2));
+	ColourFeature tmp = first - second;
+	if (Lnorm == 1)
+	{
+		result = std::abs(tmp.m_B) + std::abs(tmp.m_G) + std::abs(tmp.m_R);
+	}
+	else
+	{
+		result = std::sqrt((std::pow(tmp.m_B, 2) + std::pow(tmp.m_G, 2) + std::pow(tmp.m_R, 2)));
+	}
 	return result;
 }
 
