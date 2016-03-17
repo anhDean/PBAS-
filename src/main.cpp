@@ -16,8 +16,8 @@
 #define LOG_MESSAGE(x)
 #endif
 
-//#define _DATASET
-#define _FOLDER
+#define _DATASET
+//#define _FOLDER
 //#define _CAMERA
 //#define _PROTOTYPING
 

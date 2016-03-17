@@ -242,9 +242,9 @@ void PBAS::updateSubsamplingXY(int x, int y, int seg_value, float avg_dmin) {
 
 	//time update, adjust learning rate
 	if (seg_value == BACKGROUND_VAL)
-		m_subSamplingMap.at<float>(y, x) -= m_subsamplingIncRate / (avg_dmin + 1);
+		m_subSamplingMap.at<float>(y, x) -=  m_subsamplingDecRate / (avg_dmin + 1);
 	else
-		m_subSamplingMap.at<float>(y, x) += m_subsamplingDecRate / (avg_dmin + 1);
+		m_subSamplingMap.at<float>(y, x) += m_subsamplingIncRate / (avg_dmin + 1);
 	// check for boundaries
 	if (m_subSamplingMap.at<float>(y, x)  < m_samplingLowerBound)
 		m_subSamplingMap.at<float>(y, x) = m_samplingLowerBound;
