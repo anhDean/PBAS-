@@ -86,7 +86,7 @@ void MoGSegmenter<MoGFeature>::processFrame(const std::vector<MoGFeature>& input
 					varTrace += m_varianceTensor.at(k).at(y  * m_width * m_nFeatures + x * m_nFeatures + c);
 				}
 
-				absdiffnormXY.push_back(cv::saturate_cast<float>(MoGFeature::calcDistance(m_meanTensor.at(k).at(y * m_width + x), input.at(y * m_width + x))));
+				absdiffnormXY.push_back(cv::saturate_cast<float>(MoGFeature::calcDistance(m_meanTensor.at(k).at(y * m_width + x), input.at(y * m_width + x), 2)));
 
 				if (absdiffnormXY.at(k) <= m_decisionThreshScale *std::sqrt(varTrace))
 				{	// match
@@ -99,9 +99,20 @@ void MoGSegmenter<MoGFeature>::processFrame(const std::vector<MoGFeature>& input
 					m_meanTensor.at(k).at(y * m_width + x) = m_meanTensor.at(k).at(y * m_width + x) *  (1 - m_rho)  +  input.at(y * m_width + x) * m_rho;
 					// update variance
 					for (int c = 0; c < m_nFeatures; ++c) // calculate sum over all channels of variance vector
-					{
-						m_varianceTensor.at(k).at(y  * m_width * m_nFeatures + x * m_nFeatures + c) = cv::saturate_cast<float>(cv::saturate_cast<float>((1 - m_rho) * m_varianceTensor.at(k).at(y  * m_width * m_nFeatures + x * m_nFeatures + c))
-							+ cv::saturate_cast<float>(m_rho * std::pow((input.at(y * m_width + x)[c] - m_meanTensor.at(k).at(y * m_width + x)[c]), 2)));
+					{						
+						if (c < 3)
+						{
+
+							m_varianceTensor.at(k).at(y  * m_width * m_nFeatures + x * m_nFeatures + c) = cv::saturate_cast<float>(cv::saturate_cast<float>((1 - m_rho) * m_varianceTensor.at(k).at(y  * m_width * m_nFeatures + x * m_nFeatures + c))
+								+ MoGFeature::getColorWeight() *  cv::saturate_cast<float>(m_rho * std::pow((input.at(y * m_width + x)[c] - m_meanTensor.at(k).at(y * m_width + x)[c]), 2)));
+						}
+
+						else
+						{
+							m_varianceTensor.at(k).at(y  * m_width * m_nFeatures + x * m_nFeatures + c) = cv::saturate_cast<float>(cv::saturate_cast<float>((1 - m_rho) * m_varianceTensor.at(k).at(y  * m_width * m_nFeatures + x * m_nFeatures + c))
+								+ (1- MoGFeature::getColorWeight())/(MoGFeature::NUM_FEATURES-3) *  cv::saturate_cast<float>(m_rho * std::pow((input.at(y * m_width + x)[c] - m_meanTensor.at(k).at(y * m_width + x)[c]), 2)));
+						}
+
 					}
 				}
 				else

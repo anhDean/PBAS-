@@ -4,15 +4,16 @@
 #include "PBAS.h"
 #include <thread>
 #include <memory>
+#include "PBASFeature.h"
 
 class PBASFrameProcessor : public FrameProcessor  
 
 {
 
 private:
-	PBAS *m_pbas1, *m_pbas2, *m_pbas3;
+	PBAS<PBASFeature> m_pbas;
 	int m_iteration;
-	void parallelBackgroundAveraging(std::vector<cv::Mat>* rgb, bool wGC, cv::Mat * pbasR) const;
+	//void parallelBackgroundAveraging(std::vector<cv::Mat>* rgb, bool wGC, cv::Mat * pbasR) const;
 	
 
 public:

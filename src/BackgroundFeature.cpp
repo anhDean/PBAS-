@@ -136,7 +136,7 @@ std::vector<BackgroundFeature> BackgroundFeature::calcFeatureMap(const cv::Mat& 
 		for (int x = 0; x < inputFrame.cols; ++x)
 		{
 			tmp_gradMagn = gradMagnMap.at<float>(y, x);
-			tmp_signature_weight = gradMagnMap.at<uchar>(y, x);
+			tmp_signature_weight = gradMagnMap.at<float>(y, x);
 			tmp_color.at<char>(0, 0) = inputFrame.at<uchar>(y, x);
 			tmp_color.at<char>(1, 0) = inputFrame.at<uchar>(y, x + 1);
 			tmp_color.at<char>(2, 0) = inputFrame.at<uchar>(y, x + 2);

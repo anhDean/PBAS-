@@ -9,6 +9,7 @@
 #include "MoGSegmenter.h"
 #include "MoGFrameProcessor.h"
 #include "ColourFeature.h"
+#include "PBASFeature.h"
 
 #if _DEBUG
 #define LOG_MESSAGE(x) std::cout << __FILE__<< "(" << __LINE__ << ")" << (x) << std::endl
@@ -16,8 +17,8 @@
 #define LOG_MESSAGE(x)
 #endif
 
-#define _DATASET
-//#define _FOLDER
+//#define _DATASET
+#define _FOLDER
 //#define _CAMERA
 //#define _PROTOTYPING
 
@@ -33,7 +34,7 @@ int main(int argc, char** argv)
 	std::string data_root = argv[1], result_root = argv[2];
 	int x = 10;
 	const int ROOT_DEPTH = 2;
-	const int THREAD_NUM = 25;
+	const int THREAD_NUM = 31;
 	std::vector<FileHandler> f_obj_arr;
 	for (int i = 0; i <THREAD_NUM; ++i)
 	{
@@ -113,10 +114,10 @@ int main(int argc, char** argv)
 	delete processor;
 	*/
 
-	const std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\baseline\\highway\\input";
+	const std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\dynamicBackground\\fountain01\\input";
 	const std::string outputFolder = "E:\\Test";
-	//FrameProcessor* processor = new  PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
-	FrameProcessor* processor = new MoGFrameProcessor(4, ColourFeature::NUM_FEATURES);
+	FrameProcessor* processor = new PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
+	//FrameProcessor* processor = new MoGFrameProcessor(4, PBASFeature::NUM_FEATURES);
 	FileHandler fh;
 	fh.setDisplayFlag(true);
 	fh.process_folder(inputFolder, outputFolder, processor);
@@ -148,6 +149,33 @@ int main(int argc, char** argv)
 
 #ifdef _PROTOTYPING
 	// block for experimenting, design testing
+	PBASFeature x(1, 2, 3, 0.8);
+	PBASFeature y(x * 2);
+	PBASFeature diff =   x * 2 - y;
+
+	std::cout << x[0]<< std::endl;
+	std::cout << x[1] << std::endl;
+	std::cout << x[2] << std::endl;
+	std::cout << x[3] << std::endl;
+
+	std::cout << std::endl;
+
+	std::cout << y[0] << std::endl;
+	std::cout << y[1] << std::endl;
+	std::cout << y[2] << std::endl;
+	std::cout << y[3] << std::endl;
+
+	std::cout << std::endl;
+
+	std::cout << diff[0] << std::endl;
+	std::cout << diff[1] << std::endl;
+	std::cout << diff[2] << std::endl;
+	std::cout << diff[3] << std::endl;
+
+	std::cout << std::endl;
+
+	std::cout<< PBASFeature::calcDistance(x, y) << std::endl;
+
 
 #endif
 

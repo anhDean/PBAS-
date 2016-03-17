@@ -174,15 +174,10 @@ bool FileHandler::process_folder(std::string inputFolder, std::string outputFold
 		processor->process(input, output);
 
 		if (m_showProcessing)
-		{
-			cv::minMaxLoc(*(processor->getBackgroundDynamics()), &minVal, &maxVal);				
+		{			
 			tmp_bgDynamics =  *(processor->getBackgroundDynamics()); // TODO: find a way to normalize matrix such that it can be visualized
-
-			cv::minMaxLoc(processor->getNoiseMap(), &minVal, &maxVal);
-			tmp_bgNoise = processor->getNoiseMap().mul(cv::saturate_cast<double>(1 / (maxVal + epsilon)));
-
-			cv::minMaxLoc(processor->getGradMagnMap(), &minVal, &maxVal);
-			tmp_gradMagnMap = processor->getGradMagnMap().mul(cv::saturate_cast<double>(1 / (maxVal + epsilon)));
+			tmp_bgNoise = processor->getNoiseMap();
+			tmp_gradMagnMap = processor->getGradMagnMap();
 
 			cv::imshow(windowName, output);
 			cv::imshow(windowName + " Input", input);
