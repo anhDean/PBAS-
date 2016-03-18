@@ -22,6 +22,7 @@ void PBASFrameProcessor::setDefaultValues(int N, double defaultR, int minHits, i
 void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 {
 		const int medFilterSize = 9;
+		double meanGradMagn;
 
 		if (m_iteration == 0)
 		{
@@ -31,12 +32,13 @@ void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 			m_gradMagnMap.create(frame.size(), CV_8U);
 		}
 
-
-
 		updateGradMagnMap(frame);
 		std::vector<PBASFeature> featureMap = PBASFeature::calcFeatureMap(frame, m_gradMagnMap);
-		PBASFeature::setColorWeight(0.8 - PBASFeature::calcMeanGradMagn(featureMap, frame.rows, frame.cols) / 255);
-		std::cout << PBASFeature::calcMeanGradMagn(featureMap, frame.rows, frame.cols) / 255 <<  std::endl;
+		meanGradMagn = PBASFeature::calcMeanGradMagn(featureMap, frame.rows, frame.cols);
+		PBASFeature::setColorWeight(0.8 - meanGradMagn / 255);
+		
+		std::cout << "Mean gradient magnitude in percentage: "<< 100 * meanGradMagn / 255 << "%"<<  std::endl;
+		
 		m_pbas.process(featureMap, frame.rows, frame.cols, m_currentResult);
 		//parallelBackgroundAveraging(&rgbChannels, false, &m_currentResult);
 		//###############################################
@@ -104,3 +106,7 @@ std::auto_ptr<cv::Mat> PBASFrameProcessor::getBackgroundDynamics() const
 }
 
 
+const cv::Mat& PBASFrameProcessor::getRawOutput() const
+{
+	return m_currentResult;
+}

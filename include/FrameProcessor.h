@@ -57,6 +57,7 @@ class FrameProcessor
 		virtual void resetProcessor() = 0;
 		virtual std::auto_ptr<cv::Mat> getBackgroundDynamics() const = 0;
 		virtual const cv::Mat& getGradMagnMap() const { return m_gradMagnMap; }
+		virtual const cv::Mat& getRawOutput() const = 0;
 		virtual const cv::Mat& getNoiseMap() const
 		{
 			return m_noiseMap;

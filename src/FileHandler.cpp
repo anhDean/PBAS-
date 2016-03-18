@@ -157,7 +157,7 @@ bool FileHandler::process_folder(std::string inputFolder, std::string outputFold
 	// get file name
 	std::string tmp_inputFile, tmp_outputFile, windowName = outputFolder;
 	cv::Mat input, output;
-	cv::Mat tmp_bgDynamics, m, tmp_bgNoise, tmp_gradMagnMap;
+	cv::Mat tmp_bgDynamics, m, tmp_bgNoise, tmp_gradMagnMap, tmp_rawOut;
 
 	double minVal, maxVal, epsilon = 1e-6;
 
@@ -178,10 +178,12 @@ bool FileHandler::process_folder(std::string inputFolder, std::string outputFold
 			tmp_bgDynamics =  *(processor->getBackgroundDynamics()); // TODO: find a way to normalize matrix such that it can be visualized
 			tmp_bgNoise = processor->getNoiseMap();
 			tmp_gradMagnMap = processor->getGradMagnMap();
+			tmp_rawOut = processor->getRawOutput();
 
 			cv::imshow(windowName, output);
 			cv::imshow(windowName + " Input", input);
 			cv::imshow("Background dynamics", tmp_bgDynamics);
+			cv::imshow("Raw segmentation", tmp_rawOut);
 			cv::imshow("Background Noise", tmp_bgNoise);
 			cv::imshow("Gradient magnitude map", tmp_gradMagnMap);
 			if (cv::waitKey(1) == 27)  // 27 = ESC

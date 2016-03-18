@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 	delete processor;
 	*/
 
-	const std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\dynamicBackground\\fountain01\\input";
+	const std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\dynamicBackground\\fountain02\\input";
 	const std::string outputFolder = "E:\\Test";
 	FrameProcessor* processor = new PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
 	//FrameProcessor* processor = new MoGFrameProcessor(4, PBASFeature::NUM_FEATURES);
