@@ -12,15 +12,14 @@ set EVAL_OUTPUT=E:\PBAS+2012_Eval\
 set PROCESSOR=C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\x64\Release\PBAS+.exe
 set PARAMETERFILE=C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplication2\code\PBAS-\include\FrameProcessorParams.h
 
-
-set PARAMTYPE=int
-set PARAMNAME=N
+set PARAMTYPE=double
+set PARAMNAME=defaultR
 set FIRSTRUN=1
 
 set SOTA_RESULTS=%SCRIPTFOLDER%\..\init\state_of_the_art_csv.dat
 set CSVFILE=%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_csv.dat
 
-for /l %%x in (15, 5, 75) do (
+for /l %%x in (10, 1, 25) do (
 
 set PARAMVAL=%%x
 
@@ -56,5 +55,15 @@ set FIRSTRUN=0
 
 rem generate plots
 pushd %MATLABFOLDER%
-matlab /r "filename='%CSVFILE%';sota_file='%SOTA_RESULTS%' ;generatePlotsFromCSV"
+matlab /r "PARAM=%PARAMNAME%;filename='%CSVFILE%';sota_file='%SOTA_RESULTS%' ;generatePlotsFromCSV"
 popd
+
+
+rem move results in new eval folder
+mkdir %SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_results_%DATE%
+move  %SCRIPTFOLDER%\..\data\*.dat %SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_results_%DATE%
+move  %SCRIPTFOLDER%\..\data\*.png %SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_results_%DATE%
+copy  "%PARAMETERFILE%" "%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_results_%DATE%\PBAS_parameter.txt"
+
+
+

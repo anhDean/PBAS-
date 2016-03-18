@@ -1,7 +1,9 @@
-COLUMNS = {'N', 'Recall', 'Specificity', 'FPR', 'FNR', 'PBC', 'Precision', 'FMeasure'};
+
 SOTA ={'PAWCS', 'CDet', 'SuBSENSE', 'MBS', 'PBAS2012'};
+% PARAM = 'DefaultR';
 % sota_file ='C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplication2\code\PBAS-\evaluation\init\state_of_the_art_csv.dat'
-% filename ='C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplication2\code\PBAS-\evaluation\data\N_eval_csv.dat';
+% filename =['C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplication2\code\PBAS-\evaluation\data\' [PARAM '_eval_csv.dat']];
+COLUMNS = {PARAM, 'Recall', 'Specificity', 'FPR', 'FNR', 'PBC', 'Precision', 'FMeasure'};
 S = csvread(sota_file, 1, 0);
 M = csvread(filename, 1,0);
 x = M(:,1);
