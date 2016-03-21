@@ -14,20 +14,30 @@ set PARAMETERFILE=C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplic
 
 set PARAMTYPE=double
 set PARAMNAME=defaultR
-set FIRSTRUN=1
+
+set PARAMTYPE2=double
+set PARAMNAME2=RScale
 
 set SOTA_RESULTS=%SCRIPTFOLDER%\..\init\state_of_the_art_csv.dat
 set CSVFILE=%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_csv.dat
 
-for /l %%x in (10, 1, 25) do (
+for /l %%k in (500, 100, 500) do (
 
-set PARAMVAL=%%x
-
+set PARAMVAL2=%%k
 rem use following code to pass floating point values
-rem set /a DIV=!PARAMVAL!/10
-rem set /a MOD=!PARAMVAL!%%10
+set /a DIV=!PARAMVAL2!/100
+set /a MOD=!PARAMVAL2!%%100
 rem echo !DIV!.!MOD!
 
+set FIRSTRUN=1
+
+pushd %PYTHONFOLDER%
+start /wait %BATCHFOLDER%\set_param.cmd "%PARAMETERFILE%" "(%PARAMTYPE%, RScale, !DIV!.!MOD!)"
+popd
+
+for /l %%x in (12, 2, 24) do (
+
+set PARAMVAL=%%x
 
 pushd %PYTHONFOLDER%
 start /wait %BATCHFOLDER%\set_param.cmd "%PARAMETERFILE%" "(%PARAMTYPE%, %PARAMNAME%, !PARAMVAL!)"
@@ -42,7 +52,7 @@ call %PROCESSOR% %DATA_ROOT% %OUTPUT_ROOT%
 rem run evaluation
 pushd %MATLABFOLDER%
 start /wait %BATCHFOLDER%\evaluate_results.cmd %EVALCODEDIR% %DATA_ROOT% %EVAL_OUTPUT%
-timeout 1800
+timeout 1000
 popd
 
 rem write eval results to csv file
@@ -55,15 +65,15 @@ set FIRSTRUN=0
 
 rem generate plots
 pushd %MATLABFOLDER%
-matlab /r "PARAM=%PARAMNAME%;filename='%CSVFILE%';sota_file='%SOTA_RESULTS%' ;generatePlotsFromCSV"
+matlab /r "PARAM='%PARAMNAME%';filename='%CSVFILE%';sota_file='%SOTA_RESULTS%' ;generatePlotsFromCSV"
 popd
-
+timeout 100
 
 rem move results in new eval folder
-mkdir %SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_results_%DATE%
-move  %SCRIPTFOLDER%\..\data\*.dat %SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_results_%DATE%
-move  %SCRIPTFOLDER%\..\data\*.png %SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_results_%DATE%
-copy  "%PARAMETERFILE%" "%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_results_%DATE%\PBAS_parameter.txt"
-
-
+mkdir %SCRIPTFOLDER%\..\data\%PARAMNAME2%_%%k_%PARAMNAME%_!PARAMVAL!_eval_results_%DATE%
+move  %SCRIPTFOLDER%\..\data\*.dat %SCRIPTFOLDER%\..\data\%PARAMNAME2%_%%k_%PARAMNAME%_!PARAMVAL!_eval_results_%DATE%
+move  %SCRIPTFOLDER%\..\data\*.png %SCRIPTFOLDER%\..\data\%PARAMNAME2%_%%k_%PARAMNAME%_!PARAMVAL!_eval_results_%DATE%
+copy  "%PARAMETERFILE%" "%SCRIPTFOLDER%\..\data\%PARAMNAME2%_%%k_%PARAMNAME%_!PARAMVAL!_eval_results_%DATE%\PBAS_parameter.txt"
+copy "%EVALFILE%" "%SCRIPTFOLDER%\..\data\%PARAMNAME2%_%%k_%PARAMNAME%_!PARAMVAL!_eval_results_%DATE%\evaluation_results.txt"
+)
 
