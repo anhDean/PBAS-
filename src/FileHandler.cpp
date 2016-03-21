@@ -175,7 +175,7 @@ bool FileHandler::process_folder(std::string inputFolder, std::string outputFold
 
 		if (m_showProcessing)
 		{			
-			tmp_bgDynamics =  *(processor->getBackgroundDynamics()); // TODO: find a way to normalize matrix such that it can be visualized
+			tmp_bgDynamics =  (processor->getBackgroundDynamics()); // TODO: find a way to normalize matrix such that it can be visualized
 			tmp_bgNoise = processor->getNoiseMap();
 			tmp_gradMagnMap = processor->getGradMagnMap();
 			tmp_rawOut = processor->getRawOutput();
