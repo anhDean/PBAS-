@@ -27,6 +27,6 @@ public:
 	virtual void process(cv::Mat &, cv::Mat &);
 	virtual void process(cv::Mat &);
 	virtual const cv::Mat& getRawOutput() const;
-	virtual std::auto_ptr<cv::Mat> getBackgroundDynamics() const;
+	virtual const cv::Mat getBackgroundDynamics() const;
 	
 };

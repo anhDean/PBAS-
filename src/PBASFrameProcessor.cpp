@@ -37,9 +37,10 @@ void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 		meanGradMagn = PBASFeature::calcMeanGradMagn(featureMap, frame.rows, frame.cols);
 		PBASFeature::setColorWeight(0.8 - meanGradMagn / 255);
 		
-		std::cout << "Mean gradient magnitude in percentage: "<< 100 * meanGradMagn / 255 << "%"<<  std::endl;
-		
+		//std::cout << "Mean gradient magnitude in percentage: "<< 100 * meanGradMagn / 255 << "%"<<  std::endl;
 		m_pbas.process(featureMap, frame.rows, frame.cols, m_currentResult);
+		// normalize gradient magnmap
+
 		//parallelBackgroundAveraging(&rgbChannels, false, &m_currentResult);
 		//###############################################
 		//POST-PROCESSING HERE
@@ -52,36 +53,7 @@ void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 		m_currentResult.copyTo(m_lastResult);
 		++m_iteration;
 }
-/*
-void PBASFrameProcessor::parallelBackgroundAveraging(std::vector<cv::Mat>* rgb,  bool wGC,cv::Mat * pbasR) const
-{	
-	cv::Mat pbasResult1, pbasResult2, pbasResult3;
 
-	std::thread t1(&PBAS::process, m_pbas1, &rgb->at(0), &pbasResult1, m_gradMagnMap, m_noiseMap);
-	std::thread t2(&PBAS::process, m_pbas2, &rgb->at(1), &pbasResult2, m_gradMagnMap, m_noiseMap);
-	std::thread t3(&PBAS::process, m_pbas3, &rgb->at(2), &pbasResult3, m_gradMagnMap, m_noiseMap);
-
-	if (t1.joinable() && t2.joinable() && t3.joinable())
-	{
-		t1.join(); t2.join(); t3.join();
-	}
-
-
-	//just or all foreground results of each rgb channel
-	cv::bitwise_or(pbasResult1, pbasResult3, pbasResult1);
-	cv::bitwise_or(pbasResult1, pbasResult2, pbasResult1);
-	pbasResult1.copyTo(*pbasR);
-
-	pbasResult2.release();
-	pbasResult3.release();
-	pbasResult1.release();
-
-	t1.~thread();
-	t2.~thread();
-	t3.~thread();
-
-}
-*/
 void PBASFrameProcessor::process(cv::Mat &)
 {
 }
@@ -96,12 +68,10 @@ void PBASFrameProcessor::resetProcessor()
 	m_pbas.reset();
 
 }
-std::auto_ptr<cv::Mat> PBASFrameProcessor::getBackgroundDynamics() const
+const cv::Mat PBASFrameProcessor::getBackgroundDynamics() const
 {
-	std::auto_ptr<cv::Mat> bgdyn(new cv::Mat());
-	*bgdyn = m_pbas.getSumMinDistMap().clone();
-	*bgdyn = bgdyn->mul((float)1.0 / m_pbas.getRuns());
-	FrameProcessor::normalizeMat(*bgdyn);
+	cv::Mat bgdyn = m_pbas.getSumMinDistMap() / (m_pbas.getRuns() + 1);
+	FrameProcessor::normalizeMat(bgdyn);
 	return bgdyn;
 }
 
@@ -110,3 +80,4 @@ const cv::Mat& PBASFrameProcessor::getRawOutput() const
 {
 	return m_currentResult;
 }
+

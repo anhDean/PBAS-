@@ -55,7 +55,7 @@ class FrameProcessor
 		virtual void process(cv:: Mat &input, cv:: Mat &output)= 0;	
 		virtual void process(cv:: Mat &input)= 0;
 		virtual void resetProcessor() = 0;
-		virtual std::auto_ptr<cv::Mat> getBackgroundDynamics() const = 0;
+		virtual const cv::Mat getBackgroundDynamics() const = 0;
 		virtual const cv::Mat& getGradMagnMap() const { return m_gradMagnMap; }
 		virtual const cv::Mat& getRawOutput() const = 0;
 		virtual const cv::Mat& getNoiseMap() const
@@ -68,10 +68,8 @@ class FrameProcessor
 			double min, max;
 			// normalize gradient magnmap
 			cv::minMaxIdx(input, &min, &max);
-			input.convertTo(input, CV_32F, 1.0 / max);
+			input.convertTo(input, CV_32F, 1.0 / (float)max);
 		}
-
-
 		
 };
 

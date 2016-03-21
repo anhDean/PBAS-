@@ -24,10 +24,10 @@ private:
 	int m_height, m_width;			// height, width of frame
 	// background model
 	std::vector<std::vector<Descriptor>> m_backgroundModel; // outer vector N, inner vector matrix with features
-	//new background distance model
 	std::vector<cv::Mat> m_minDistanceModel; // D model in paper holds dmin values over N
-	
-	cv::Mat m_sumMinDistMap, m_RMap, m_subSamplingMap; //map of sum over dmin and of rThresholds
+	//new background distance model
+	cv::Mat m_sumMinDistMap;
+	cv::Mat  m_RMap, m_subSamplingMap; //map of sum over dmin and of rThresholds
 
 	//random number generator
 	cv::RNG randomGenerator;
@@ -63,8 +63,11 @@ public:
 	static int getPBASCounter();
 	double getAlpha() const;
 	double getBeta() const;
+	int getHeight() const;
+	int getWidth() const;
 	const cv::Mat& getTImg() const;
 	const cv::Mat& getRImg() const;
+	const std::vector<cv::Mat>& getMinDistModel() const;
 	const cv::Mat& getSumMinDistMap() const; // measures "background dynamics"
 	int getRuns() const;
 	
@@ -145,34 +148,39 @@ void PBAS<Descriptor>::createRandomNumberArray()
 	//pre calculate random number 
 	for (int l = 0; l < NUM_RANDOMGENERATION; l++)
 	{
-		randomN.push_back(cv::saturate_cast<int>(randomGenerator.uniform(0, m_N))); 		// for Background model position coordinate, upper bound is excluded
-		randomX.push_back(cv::saturate_cast<int>(randomGenerator.uniform(-1, +2)));				// for neighboring X  coordinate, upper bound is excluded
-		randomY.push_back(cv::saturate_cast<int>(randomGenerator.uniform(-1, +2)));				// for neighboring Y coordinate, upper bound is excluded
-		randomDist.push_back(cv::saturate_cast<int>(randomGenerator.uniform(0, m_N))); // for Distance array posi  coordinate, upper bound is excluded
+		randomN.push_back((int)(randomGenerator.uniform(0, m_N))); 		// for Background model position coordinate, upper bound is excluded
+		randomX.push_back((int)(randomGenerator.uniform(-1, +2)));				// for neighboring X  coordinate, upper bound is excluded
+		randomY.push_back((int)(randomGenerator.uniform(-1, +2)));				// for neighboring Y coordinate, upper bound is excluded
+		randomDist.push_back((int)(randomGenerator.uniform(0, m_N))); // for Distance array posi  coordinate, upper bound is excluded
 	}
 }
 
 template <typename Descriptor>
 bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int height, int width, cv::Mat& output)
 {
+	// variables to generate old average of gradient magnitude
+	int xNeigh, yNeigh;	// x,y coordinate of neighbor
+	float formerDistanceBack;
+	int count;  // used for #min
+	int index;  // index k = 1,...,N or k = 1,...,runs (runs != N)
+	float dist; // distance measure
+	float minDist; // arbritrary large number for minDist
+	int entry;
+	double sumDist;
+	
+	cv::Mat segMap(height, width, CV_8U);
 	
 	m_height = height;
 	m_width = width;
 
-	int xNeigh, yNeigh;	// x,y coordinate of neighbor
-	double formerDistanceBack, meanDistBack;
-	cv::Mat segMap(m_height, m_width, CV_8U);
-
-
 	if (m_runs < m_N)
-		// if runs < N collect background features without updating the model
 	{
-		m_backgroundModel.push_back(featureMap);
-		m_minDistanceModel.push_back(cv::Mat(segMap.size(), CV_32F)); // distanceStatisticBack: vector of Mat*, holds mean dist values for background
-
 		if (m_runs == 0)
-			// for the first run init R,T maps withdefault values
 		{
+
+			m_backgroundModel.resize(m_N);
+			m_minDistanceModel.resize(m_N, cv::Mat(segMap.size(), CV_32F, cv::Scalar(1.0)));
+
 			m_sumMinDistMap.create(segMap.size(), CV_32F);
 			m_sumMinDistMap.setTo(cv::Scalar(0.0));
 
@@ -182,54 +190,36 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 			m_subSamplingMap.create(segMap.size(), CV_32F);
 			m_subSamplingMap.setTo(cv::Scalar(m_defaultR));
 		}
+
+		m_backgroundModel.at(m_runs) = featureMap;
 		++m_runs;
 	}
-
-	double sumDist = 0.0;
-	// variables to generate old average of gradient magnitude
-	double maxNorm = 0.0;
-	int glCounterFore = 0;
-
-	int count;  // used for #min
-	int index;  // index k = 1,...,N or k = 1,...,runs (runs != N)
-	double dist; // distance measure
-	double temp;
-	double maxDist;
-	float minDist; // arbritrary large number for minDist
-	int entry;
-
 
 	for (int y = 0; y < m_height; ++y)
 	{
 		for (int x = 0; x < m_width; ++x)
 		{
+			sumDist = 0.0;
 			count = 0;  // used for #min
 			index = 0;  // index k = 1,...,N or k = 1,...,runs (runs != N)
 			dist = 0.0; // distance measure
-			temp = 0.0;
-			maxDist = 0.0;
 			minDist = 1000.0; // arbritrary large number for minDist
+			
 			entry = randomGenerator.uniform(5, NUM_RANDOMGENERATION - 5);
 
-
-			// match observation with backgound model
 			do
 			{					
-				dist = Descriptor::calcDistance(m_backgroundModel.at(index)[y * m_width + x], featureMap[y * m_width + x]);  // 1: L1 otherwise L2 norm
+				dist = Descriptor::calcDistance(m_backgroundModel.at(index)[y * m_width + x], featureMap[y * m_width + x], 2);  // 1: L1 (faster) otherwise L2 norm
 
 				if (dist < m_RMap.at<float>(y, x)) // match: smaller than pixel-depending threshold r
 				{
 					++count;
-					if (minDist > dist)
+					if (dist < minDist)
 						minDist = dist;
 				}
 
-				else
-				{
-					//maxNorm += norm;
-					++glCounterFore;
-				}
 				++index;
+
 			} while ((count < m_minHits) && (index < m_runs)); // count << #min && index < runs, max(runs) = N
 
 
@@ -241,28 +231,29 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 				{
 					formerDistanceBack = 0; // since no distance value will be replaces, nothing need to be buffered for moving avg calculation
 					m_minDistanceModel.at(m_runs - 1).at<float>(y, x) = minDist;
-					m_sumMinDistMap.at<float>(y, x) += m_minDistanceModel.at(m_runs - 1).at<float>(y, x);
 				}
 				//update model
-				if (m_runs == m_N)
+				if (m_runs >= m_N)
 				{
 					// Update current pixel
 					// get random number between 0 and nrSubsampling-1
 					int rand = 0;
-					int updateCoeff = randomGenerator.uniform((int)0, (int)ceil(m_subSamplingMap.at<float>(y, x))); // 0 - 16
+					int updateCoeff = randomGenerator.uniform(0, (int)ceil(m_subSamplingMap.at<float>(y, x))); // 0 - 16
+
+
 					if (updateCoeff < 1)// random subsampling, p(x) = 1/T
 					{
 						// replace randomly chosen sample
-						rand = randomN.at(entry + 1); //randomGenerator.uniform((int)0,(int)N-1);
-													  // replace background model at pixel y,x
+						rand = randomN.at(entry + 1);
 						m_backgroundModel.at(rand)[y * m_width + x] = featureMap[y * m_width + x];
+
 						// replace sum distance model at pixel y,x
 						formerDistanceBack = m_minDistanceModel.at(randomDist.at(entry)).at<float>(y, x); // save old dmin
-						m_minDistanceModel.at(randomDist.at(entry)).at<float>(y, x) = minDist; // replace old entry with new dmin
-						m_sumMinDistMap.at<float>(y, x) += m_minDistanceModel.at(randomDist.at(entry)).at<float>(y, x) - formerDistanceBack; // calculate current sum of dmins
+						m_minDistanceModel.at(randomDist.at(entry)).at<float>(y, x) = minDist; // replace old entry with new dmin 
 					}
+
 					// Update neighboring background model
-					updateCoeff = randomGenerator.uniform((int)0, (int)ceil(m_subSamplingMap.at<float>(y, x)));
+					updateCoeff = randomGenerator.uniform(0, (int)ceil(m_subSamplingMap.at<float>(y, x)));
 					if (updateCoeff < 1)// random subsampling
 					{
 						//choose neighboring pixel randomly
@@ -272,28 +263,23 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 
 						// replace randomly chosen sample
 						rand = randomN.at(entry - 1);
-						m_backgroundModel.at(rand)[yNeigh * m_width + xNeigh] = featureMap[yNeigh * m_width + xNeigh];
+						m_backgroundModel.at(rand)[yNeigh * m_width + xNeigh] = featureMap[y * m_width + x];
 					}
 				}
+
+				m_sumMinDistMap.at<float>(y,x) = cv::saturate_cast<float>(minDist - formerDistanceBack + m_sumMinDistMap.at<float>(y,x));
 			}
+
 			else
 			{
 				segMap.at<uchar>(y, x) = FOREGROUND_VAL;
-
-				// no model update when foreground!?
 			}
-			meanDistBack = m_sumMinDistMap.at<float>(y, x) / m_runs;
-			// update learning rate  and decision threshold
-			updateSubsamplingXY(x, y, segMap.at<uchar>(y, x), meanDistBack);
-			updateRThresholdXY(x, y, meanDistBack);
+
+			updateSubsamplingXY(x, y, segMap.at<uchar>(y, x), m_sumMinDistMap.at<float>(y, x) / m_minDistanceModel.size());
+			updateRThresholdXY(x, y, m_sumMinDistMap.at<float>(y, x) / m_minDistanceModel.size());
 		}
 	}
-	// calculate average gradient magnitude
-	//double meanNorm = maxNorm / ((double)(glCounterFore + 1));
-	//double meanNorm = abs(formerMaxNorm - imgFeatures.getGradMagnMean());
-	//double meanNorm = abs(formerMaxNorm - Descriptor::calcMeanGradMagn(featureMap,m_height, m_width));
-	//formerMaxNorm =  meanNorm; //TODO: old value 20 or 100
-													 // write segmentation result to output
+
 	segMap.copyTo(output);
 	return true;
 }
@@ -301,9 +287,7 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 template <typename Descriptor>
 void PBAS<Descriptor>::updateRThresholdXY(int x, int y, float avg_dmin) {
 	//update R threshold of pixel x(j,i)
-	//float meanDistBack = m_sumMinDistMap.at<float>(y, x) / runs; // mean(dmin) = sum(dmin)/runs
-
-	if (m_RMap.at<float>(y, x) <= avg_dmin *m_RScale)
+	if (m_RMap.at<float>(y, x) <= avg_dmin * m_RScale)
 	{
 		m_RMap.at<float>(y, x) *= (1 + m_RIncDec);
 	}
@@ -314,6 +298,9 @@ void PBAS<Descriptor>::updateRThresholdXY(int x, int y, float avg_dmin) {
 	}
 	if (m_RMap.at<float>(y, x) < m_defaultR)
 		m_RMap.at<float>(y, x) = m_defaultR;
+	
+	if (m_RMap.at<float>(y, x) > 2.5 * m_defaultR)
+		m_RMap.at<float>(y, x) = 2.5 * m_defaultR;
 
 }
 
@@ -328,6 +315,7 @@ void PBAS<Descriptor>::updateSubsamplingXY(int x, int y, int seg_value, float av
 	// check for boundaries
 	if (m_subSamplingMap.at<float>(y, x)  < m_samplingLowerBound)
 		m_subSamplingMap.at<float>(y, x) = m_samplingLowerBound;
+
 	else if (m_subSamplingMap.at<float>(y, x) > m_samplingUpperBound)
 		m_subSamplingMap.at<float>(y, x) = m_samplingUpperBound;
 }
@@ -421,4 +409,22 @@ const cv::Mat& PBAS<Descriptor>::getRImg() const
 {
 	// treshold map
 	return m_RMap;
+}
+
+
+template <typename Descriptor>
+int PBAS<Descriptor>::getHeight() const
+{
+	return m_height;
+}
+template <typename Descriptor>
+int PBAS<Descriptor>::getWidth() const
+{
+	return m_width;
+}
+
+template <typename Descriptor>
+const std::vector<cv::Mat>& PBAS<Descriptor>::getMinDistModel() const
+{
+	return m_minDistanceModel;
 }
