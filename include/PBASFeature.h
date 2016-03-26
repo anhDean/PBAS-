@@ -5,11 +5,12 @@ class PBASFeature
 {
 protected:
 	int m_gradMagnVal;
-	int m_R, m_G, m_B;
 	static float fg_colorWeight;
 	void copyOther(const PBASFeature& other);
 
 public:
+	int m_R, m_G, m_B;
+
 	static const int NUM_FEATURES = 4;
 
 	PBASFeature(); // random initialization

@@ -1,3 +1,4 @@
+@echo off
 SETLOCAL ENABLEDELAYEDEXPANSION
 set SCRIPTFOLDER=C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplication2\code\PBAS-\evaluation\scripts
 set DATA_ROOT=E:\Datasets\datasets2012\dataset
@@ -21,7 +22,7 @@ set PARAMNAME2=RScale
 set SOTA_RESULTS=%SCRIPTFOLDER%\..\init\state_of_the_art_csv.dat
 set CSVFILE=%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_csv.dat
 
-for /l %%k in (500, 100, 500) do (
+for /l %%k in (450, 50, 500) do (
 
 set PARAMVAL2=%%k
 rem use following code to pass floating point values
@@ -35,7 +36,7 @@ pushd %PYTHONFOLDER%
 start /wait %BATCHFOLDER%\set_param.cmd "%PARAMETERFILE%" "(%PARAMTYPE%, RScale, !DIV!.!MOD!)"
 popd
 
-for /l %%x in (12, 2, 24) do (
+for /l %%x in (16, 2, 20) do (
 
 set PARAMVAL=%%x
 
@@ -52,8 +53,9 @@ call %PROCESSOR% %DATA_ROOT% %OUTPUT_ROOT%
 rem run evaluation
 pushd %MATLABFOLDER%
 start /wait %BATCHFOLDER%\evaluate_results.cmd %EVALCODEDIR% %DATA_ROOT% %EVAL_OUTPUT%
-timeout 1000
+timeout 1500
 popd
+
 
 rem write eval results to csv file
 pushd %PYTHONFOLDER%

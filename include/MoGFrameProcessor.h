@@ -17,7 +17,7 @@ public:
 	virtual void resetProcessor();
 	virtual void process(cv::Mat &in, cv::Mat &out);
 	virtual void process(cv::Mat &in) {}
-	virtual std::auto_ptr<cv::Mat> getBackgroundDynamics() const;
+	virtual const cv::Mat getBackgroundDynamics() const;
 	virtual const cv::Mat& getRawOutput() const;
 };
 

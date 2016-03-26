@@ -43,7 +43,6 @@ class FrameProcessor
 					m_noiseMap.at<float>(y, x) = (m_noiseMap.at<float>(y, x) < 0) ? 0 : m_noiseMap.at<float>(y, x);
 				}
 			}
-			normalizeMat(m_noiseMap);
 		}
 
 
@@ -58,6 +57,7 @@ class FrameProcessor
 		virtual const cv::Mat getBackgroundDynamics() const = 0;
 		virtual const cv::Mat& getGradMagnMap() const { return m_gradMagnMap; }
 		virtual const cv::Mat& getRawOutput() const = 0;
+		virtual const cv::Mat drawBgSample() = 0;
 		virtual const cv::Mat& getNoiseMap() const
 		{
 			return m_noiseMap;
@@ -70,6 +70,7 @@ class FrameProcessor
 			cv::minMaxIdx(input, &min, &max);
 			input.convertTo(input, CV_32F, 1.0 / (float)max);
 		}
+
 		
 };
 
