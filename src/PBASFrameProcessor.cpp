@@ -7,6 +7,7 @@ PBASFrameProcessor::PBASFrameProcessor(int N, double defaultR, int minHits, int 
 
 {
 	setDefaultValues(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, samplingLowerBound, samplingUpperBound);
+
 }
 PBASFrameProcessor::~PBASFrameProcessor(void)
 { 	
@@ -23,6 +24,8 @@ void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 {
 		const int medFilterSize = 9;
 		double meanGradMagn;
+		std::vector<AmbiguousCandidate> candidates;
+		cv::Mat subSamplingOffset = cv::Mat::zeros(frame.size(), CV_32F);
 
 		if (m_iteration == 0)
 		{
@@ -30,15 +33,48 @@ void PBASFrameProcessor::process(cv:: Mat &frame, cv:: Mat &output)
 			m_lastResultPP = cv::Mat::zeros(frame.size(), CV_8U);
 			m_noiseMap = cv::Mat::zeros(frame.size(), CV_32F);
 			m_gradMagnMap.create(frame.size(), CV_8U);
+			m_motionDetector.initialize(frame);
 		}
+		if (m_iteration != 0)
+			m_motionDetector.updateMotionMap(frame);
 
 		updateGradMagnMap(frame);
 		std::vector<PBASFeature> featureMap = PBASFeature::calcFeatureMap(frame, m_gradMagnMap);
 		meanGradMagn = PBASFeature::calcMeanGradMagn(featureMap, frame.rows, frame.cols);
 		PBASFeature::setColorWeight(0.8 - meanGradMagn / 255);
 		
-		//std::cout << "Mean gradient magnitude in percentage: "<< 100 * meanGradMagn / 255 << "%"<<  std::endl;
-		m_pbas.process(featureMap, frame.rows, frame.cols, m_currentResult);
+		m_pbas.process(featureMap, frame.rows, frame.cols, m_currentResult, m_motionDetector.getMotionMap());
+
+		if (m_pbas.isInitialized())
+		{
+			m_motionDetector.updateCandidates(m_currentResultPP);
+			m_motionDetector.classifyStaticCandidates(frame, m_pbas.drawBgSample(), m_currentResultPP);
+
+			candidates = m_motionDetector.getStaticObjects();
+
+			for (int k = 0; k < candidates.size(); ++k)
+			{
+				if (candidates[k].state == DETECTOR_GHOST_OBJECT)
+				{
+					subSamplingOffset(candidates[k].boundingBox) -= 5;
+				}
+				else if ((candidates[k].state == DETECTOR_STATIC_OBJECT))
+				{
+					subSamplingOffset(candidates[k].boundingBox) += 5;
+				}
+				
+			}
+			m_pbas.subSamplingOffset(subSamplingOffset);
+			
+			#ifndef _DATASET	
+			MotionDetector::drawBoundingBoxesClassified(m_currentResultPP, m_outputWithBb, candidates);
+			#endif 
+		}
+
+
+
+// !_DATASET
+
 		// normalize gradient magnmap
 
 		//parallelBackgroundAveraging(&rgbChannels, false, &m_currentResult);
@@ -81,3 +117,14 @@ const cv::Mat& PBASFrameProcessor::getRawOutput() const
 	return m_currentResult;
 }
 
+const cv::Mat PBASFrameProcessor::drawBgSample()
+{
+	cv::Mat bgdyn = m_pbas.drawBgSample();
+	return bgdyn;
+}
+
+
+const cv::Mat& PBASFrameProcessor::getOutputWithBb() const
+{
+	return m_outputWithBb;
+}

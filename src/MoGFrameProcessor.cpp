@@ -54,9 +54,10 @@ MoGFrameProcessor::~MoGFrameProcessor()
 
 }
 
-std::auto_ptr<cv::Mat> MoGFrameProcessor::getBackgroundDynamics() const
+const cv::Mat MoGFrameProcessor::getBackgroundDynamics() const
 {
-	return m_processor->getVarianceTraceMat();
+	//return m_processor->getVarianceTraceMat();
+	return cv::Mat();
 }
 
 const cv::Mat& MoGFrameProcessor::getRawOutput() const
