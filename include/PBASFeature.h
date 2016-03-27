@@ -18,7 +18,7 @@ public:
 	PBASFeature(const PBASFeature& other); // copy constructor
 	PBASFeature(const cv::Mat& color, int gradMagnVal, float colorWeight = 0.8); // assume cv mat multichannel bgr at x,y
 
-	static double calcDistance(const PBASFeature& first, const PBASFeature& second, int Lnorm = 2);
+	static double calcDistance(const PBASFeature& first, const PBASFeature& second);
 	static std::vector<PBASFeature> calcFeatureMap(const cv::Mat& inputFrame);
 	static std::vector<PBASFeature> calcFeatureMap(const cv::Mat& inputFrame, const cv::Mat& gradMagnMap);
 	static float calcMeanGradMagn(const std::vector<PBASFeature>& featureMap, int height, int width);

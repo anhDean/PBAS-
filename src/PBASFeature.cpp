@@ -38,19 +38,15 @@ void PBASFeature::copyOther(const PBASFeature& other)
 }
 
 // calc functions
-double PBASFeature::calcDistance(const PBASFeature& first, const PBASFeature& second, int Lnorm)
+double PBASFeature::calcDistance(const PBASFeature& first, const PBASFeature& second)
 {
 	double result;
-	PBASFeature tmp = first - second;
-	if (Lnorm == 1)
-	{
-		result  = (std::abs(tmp.m_B) + std::abs(tmp.m_G) + std::abs(tmp.m_R)) * fg_colorWeight + (1- fg_colorWeight) * std::abs(tmp.m_gradMagnVal);
-	}
 
-	else
-	{
-		result = std::sqrt(((std::pow(tmp.m_B,2) + std::pow(tmp.m_G,2) + std::pow(tmp.m_R,2)) *fg_colorWeight + (1 - fg_colorWeight) * std::pow(tmp.m_gradMagnVal,2)));
-	}
+	result = fg_colorWeight * (std::abs(first.m_B - second.m_B) + std::abs(first.m_G - second.m_G) + std::abs(first.m_R - second.m_R))
+			+ (1 - fg_colorWeight) * std::abs(first.m_gradMagnVal - second.m_gradMagnVal);
+
+
+
 	return result;
 
 }

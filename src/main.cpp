@@ -30,10 +30,10 @@
 #define LOG_MESSAGE(x)
 #endif
 
-#define _DATASET
+//#define _DATASET
 //#define _FOLDER
 //#define _CAMERA
-//#define _PROTOTYPING1
+#define _PROTOTYPING1
 //#define _PROTOTYPING2
 
 int main(int argc, char** argv)
@@ -169,8 +169,8 @@ int main(int argc, char** argv)
 
 		PBASFrameProcessor *processor = new PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
 	
-		std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\intermittentObjectMotion\\abandonedBox\\input";
-		int offset = 1700;
+		std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\baseline\\PETS2006\\input";
+		int offset = 0;
 		for (int i = 0; i < 3000 - 1; ++i)
 		{	
 			std::stringstream ss1, ss2;
@@ -178,13 +178,15 @@ int main(int argc, char** argv)
 			ss1 << inputFolder << "\\in" << std::setw(6) << std::setfill('0') << i + 1 + offset << std::setfill(' ') << ".jpg";
 			img = cv::imread(ss1.str());
 
+
 			processor->process(img, result);
 			cv::imshow("result", result);
 			cv::imshow("raw result", processor->getRawOutput());
 			cv::imshow("input", img);
-			cv::imshow("bg_sample", processor->drawBgSample());
+			cv::imshow("bg sample", processor->drawBgSample());
 			if(processor->getOutputWithBb().data != NULL)
-				cv::imshow("input with Bb", processor->getOutputWithBb());
+				cv::imshow("out bb", processor->getOutputWithBb());
+
 			cv::waitKey(1);
 
 		}

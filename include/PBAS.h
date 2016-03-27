@@ -224,7 +224,7 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 				modelSizeXY = m_backgroundModel.at(y * m_width + x).size();
 				do
 				{
-					dist = Descriptor::calcDistance(m_backgroundModel.at(y * m_width + x)[index], featureMap[y * m_width + x], 1);  // 1: L1 (faster) otherwise L2 norm
+					dist = Descriptor::calcDistance(m_backgroundModel.at(y * m_width + x)[index], featureMap[y * m_width + x]);  // 1: L1 (faster) otherwise L2 norm
 
 					if (dist < m_RMap.at<float>(y, x)) // match: smaller than pixel-depending threshold r
 					{
@@ -346,7 +346,7 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 
 				do
 				{
-					dist = Descriptor::calcDistance(m_backgroundModel.at(y * m_width + x)[index], featureMap[y * m_width + x], 1);  // 1: L1 (faster) otherwise L2 norm
+					dist = Descriptor::calcDistance(m_backgroundModel.at(y * m_width + x)[index], featureMap[y * m_width + x]);  // 1: L1 (faster) otherwise L2 norm
 
 					if (dist < m_RMap.at<float>(y, x)) // match: smaller than pixel-depending threshold r
 					{
