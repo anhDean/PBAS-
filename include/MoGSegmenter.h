@@ -86,7 +86,7 @@ void MoGSegmenter<MoGFeature>::processFrame(const std::vector<MoGFeature>& input
 					varTrace += m_varianceTensor.at(k).at(y  * m_width * m_nFeatures + x * m_nFeatures + c);
 				}
 
-				absdiffnormXY.push_back(cv::saturate_cast<float>(MoGFeature::calcDistance(m_meanTensor.at(k).at(y * m_width + x), input.at(y * m_width + x), 2)));
+				absdiffnormXY.push_back(cv::saturate_cast<float>(MoGFeature::calcDistance(m_meanTensor.at(k).at(y * m_width + x), input.at(y * m_width + x))));
 
 				if (absdiffnormXY.at(k) <= m_decisionThreshScale *std::sqrt(varTrace))
 				{	// match

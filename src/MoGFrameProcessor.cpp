@@ -17,11 +17,11 @@ void MoGFrameProcessor::process(cv::Mat &frame, cv::Mat &output)
 		m_gradMagnMap.create(frame.size(), CV_32F);
 		m_processor->init(frame.rows, frame.cols);
 	}
-	updateGradMagnMap(frame);
+	//updateGradMagnMap(frame);
 
 	std::vector<PBASFeature> featureMap = PBASFeature::calcFeatureMap(frame);
 
-	PBASFeature::setColorWeight(0.7);
+	//PBASFeature::setColorWeight(0.7);
 	//PBASFeature::setColorWeight(0.8 -  PBASFeature::calcMeanGradMagn(featureMap, frame.rows, frame.cols) / 255 );
 	//maybe use a bilateralFilter
 	//cv::bilateralFilter(frame, blurImage, 5, 15, 15);

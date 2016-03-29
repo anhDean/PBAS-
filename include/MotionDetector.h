@@ -24,8 +24,8 @@ const int DETECTOR_UNCLASSIFIED_OBJECT = 5;
 class MotionDetector
 {
 	private:
-		static const int m_MIN_BLOBSIZE = 15*15;
-		static const int m_MAX_STATIC_OBJ = 3;
+		static const int m_MIN_BLOBSIZE =10*10;
+		static const int m_MAX_STATIC_OBJ = 10;
 		static const int m_MAX_MOVING_OBJ = 10;
 		
 		cv::Mat m_prev_grey;
@@ -68,7 +68,10 @@ class MotionDetector
 		static void drawBoundingBoxes(const cv::Mat& input, cv::Mat& output, const std::vector<cv::Rect>& bb);
 		static void drawBoundingBoxesClassified(const cv::Mat& input, cv::Mat& output, const std::vector<AmbiguousCandidate>& bb);
 		static cv::Mat drawFlowField(const cv::Mat& input, const cv::Mat& flowMat);
-		static cv::Mat drawContours(const cv::Mat& input);
+		static cv::Mat drawContours(const cv::Mat& input, int linePx = 2);
+		static float getMSSIM(const cv::Mat& i1, const cv::Mat& i2);
+		static double distance_hausdorff(const std::vector<cv::Point> & a, const std::vector<cv::Point> & b);
+		static int distance_2(const std::vector<cv::Point> & a, const std::vector<cv::Point>  & b);
 
 };
 

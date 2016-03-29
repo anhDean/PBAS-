@@ -1,4 +1,3 @@
-@echo off
 SETLOCAL ENABLEDELAYEDEXPANSION
 set SCRIPTFOLDER=C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplication2\code\PBAS-\evaluation\scripts
 set DATA_ROOT=E:\Datasets\datasets2012\dataset
@@ -16,27 +15,27 @@ set PARAMETERFILE=C:\Users\Dinh\Documents\GitHub\Master\Code\PBAS+\ConsoleApplic
 set PARAMTYPE=double
 set PARAMNAME=defaultR
 
-set PARAMTYPE2=double
-set PARAMNAME2=RScale
+set PARAMTYPE2=int
+set PARAMNAME2=N
 
 set SOTA_RESULTS=%SCRIPTFOLDER%\..\init\state_of_the_art_csv.dat
 set CSVFILE=%SCRIPTFOLDER%\..\data\%PARAMNAME%_eval_csv.dat
 
-for /l %%k in (450, 50, 500) do (
+for /l %%k in (40, 2, 50) do (
 
 set PARAMVAL2=%%k
 rem use following code to pass floating point values
-set /a DIV=!PARAMVAL2!/100
-set /a MOD=!PARAMVAL2!%%100
+rem set /a DIV=!PARAMVAL2!/100
+rem et /a MOD=!PARAMVAL2!%%100
 rem echo !DIV!.!MOD!
 
 set FIRSTRUN=1
 
 pushd %PYTHONFOLDER%
-start /wait %BATCHFOLDER%\set_param.cmd "%PARAMETERFILE%" "(%PARAMTYPE%, RScale, !DIV!.!MOD!)"
+start /wait %BATCHFOLDER%\set_param.cmd "%PARAMETERFILE%" "(%PARAMTYPE2%, %PARAMNAME2%, !PARAMVAL2!)"
 popd
 
-for /l %%x in (16, 2, 20) do (
+for /l %%x in (18, 2, 24) do (
 
 set PARAMVAL=%%x
 

@@ -9,21 +9,30 @@ PBASFeature::PBASFeature()
 	m_B = cv::saturate_cast<uchar>(randomGenerator.uniform(0, 255));
 	m_R = cv::saturate_cast<uchar>(randomGenerator.uniform(0, 255));
 	m_G = cv::saturate_cast<uchar>(randomGenerator.uniform(0, 255));
-	m_gradMagnVal = cv::saturate_cast<uchar>(randomGenerator.uniform(0, 255));
+	m_gradX = cv::saturate_cast<uchar>(randomGenerator.uniform(0, 255));
+	m_gradY = cv::saturate_cast<uchar>(randomGenerator.uniform(0, 255));
 }
-PBASFeature::PBASFeature(int R, int G, int B, int gM, float colorWeight, float gradMagnWeight)
+PBASFeature::PBASFeature(int R, int G, int B, int avgB, int avgG, int avgR, int gMX, int gMY, float colorWeight)
 {
 	m_R = R; m_G = G; m_B = B;
-	m_gradMagnVal = gM;
+	m_avgB = avgB;
+	m_avgG = avgG;
+	m_avgR = avgR;
+	m_gradX = gMX;
+	m_gradY = gMY;
 }
-PBASFeature::PBASFeature(const cv::Mat& color, int gradMagnVal, float colorWeight)
+
+PBASFeature::PBASFeature(const cv::Mat& color, int avgB, int avgG, int avgR, int gMX, int gMY, float colorWeight)
 {
 	CV_Assert(color.rows == 1 && color.cols == 1 && color.type() == CV_8UC3);
 	m_B = color.ptr<uchar>(0)[0];
 	m_G = color.ptr<uchar>(0)[1];
 	m_R = color.ptr<uchar>(0)[2];
-
-	m_gradMagnVal = gradMagnVal;
+	m_avgB = avgB;
+	m_avgG = avgG;
+	m_avgR = avgR;
+	m_gradX = gMX;
+	m_gradY = gMY;
 }
 PBASFeature::PBASFeature(const PBASFeature& other)
 {
@@ -34,7 +43,11 @@ void PBASFeature::copyOther(const PBASFeature& other)
 	m_B = other.m_B;
 	m_R = other.m_R;
 	m_G = other.m_G;
-	m_gradMagnVal = other.m_gradMagnVal;
+	m_avgB = other.m_avgB;
+	m_avgG = other.m_avgG;
+	m_avgR = other.m_avgR;
+	m_gradX = other.m_gradX;
+	m_gradY = other.m_gradY;
 }
 
 // calc functions
@@ -42,10 +55,8 @@ double PBASFeature::calcDistance(const PBASFeature& first, const PBASFeature& se
 {
 	double result;
 
-	result = fg_colorWeight * (std::abs(first.m_B - second.m_B) + std::abs(first.m_G - second.m_G) + std::abs(first.m_R - second.m_R))
-			+ (1 - fg_colorWeight) * std::abs(first.m_gradMagnVal - second.m_gradMagnVal);
-
-
+	result = std::abs(first.m_B - second.m_B) + std::abs(first.m_G - second.m_G) + std::abs(first.m_R - second.m_R);
+		//+ (std::abs(first.m_avgB - second.m_avgB) + std::abs(first.m_avgG - second.m_avgG) + std::abs(first.m_avgR - second.m_avgR)));
 
 	return result;
 
@@ -56,22 +67,30 @@ std::vector<PBASFeature> PBASFeature::calcFeatureMap(const cv::Mat& inputFrame)
 	// get gradient magnitude map
 	cv::Mat sobelX, sobelY, inputGray, gradMagnMap;
 
-	cv::GaussianBlur(inputFrame, inputGray, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+	cv::GaussianBlur(inputFrame, inputGray, cv::Size(5, 5), 2, 2, cv::BORDER_DEFAULT);
 	cv::cvtColor(inputGray, inputGray, CV_BGR2GRAY);
 	
-	/// Gradient X
-	//Scharr( src_gray, grad_x, ddepth, 1, 0, scale, delta, BORDER_DEFAULT );
-	Sobel(inputGray, sobelX, CV_16S, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT);
-	convertScaleAbs(sobelX, sobelX);
-
-	/// Gradient Y
-	//Scharr( src_gray, grad_y, ddepth, 0, 1, scale, delta, BORDER_DEFAULT );
-	Sobel(inputGray, sobelY, CV_16S, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT);
+	// Gradient Y
+	Sobel(inputGray, sobelY, CV_64F, 1, 0, 5, 1, 0, cv::BORDER_DEFAULT);
 	convertScaleAbs(sobelY, sobelY);
 
-	/// Total Gradient (approximate)
-	cv::addWeighted(sobelX, 0.5, sobelY, 0.5, 0, gradMagnMap);
+	// Gradient X
+	Sobel(inputGray, sobelX, CV_64F, 0, 1, 5, 1, 0, cv::BORDER_DEFAULT);
+	convertScaleAbs(sobelX, sobelX);
 
+	sobelY.convertTo(sobelY, CV_8U);
+	sobelX.convertTo(sobelX, CV_8U);
+
+	int kernelSize = 7;
+	cv::Mat avgKernel = cv::Mat::ones(kernelSize, kernelSize, CV_32F) / (kernelSize * kernelSize);
+	cv::Mat avgMatB, avgMatG, avgMatR;
+	cv::Mat channel[3];
+
+	cv::split(inputFrame, channel);
+
+	cv::filter2D(channel[0], avgMatB, CV_8U, avgKernel, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
+	cv::filter2D(channel[1], avgMatG, CV_8U, avgKernel, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
+	cv::filter2D(channel[2], avgMatR, CV_8U, avgKernel, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
 
 	cv::Mat tmp(1, 1, CV_8UC3);
 
@@ -84,7 +103,9 @@ std::vector<PBASFeature> PBASFeature::calcFeatureMap(const cv::Mat& inputFrame)
 			tmp.ptr<uchar>(0)[1] = inputFrame.at<cv::Vec3b>(y, x)[1];
 			tmp.ptr<uchar>(0)[2] = inputFrame.at<cv::Vec3b>(y, x)[2];
 
-			result.push_back(PBASFeature(tmp, gradMagnMap.at<uchar>(y,x)));
+
+
+			result.push_back(PBASFeature(tmp, avgMatB.at<uchar>(y, x), avgMatG.at<uchar>(y, x), avgMatR.at<uchar>(y, x), sobelX.at<uchar>(y,x), sobelY.at<uchar>(y, x)));
 		}
 
 
@@ -92,10 +113,25 @@ std::vector<PBASFeature> PBASFeature::calcFeatureMap(const cv::Mat& inputFrame)
 	return result;
 
 }
-std::vector<PBASFeature> PBASFeature::calcFeatureMap(const cv::Mat& inputFrame, const cv::Mat& gradMagnMap)
+std::vector<PBASFeature> PBASFeature::calcFeatureMap(const cv::Mat& inputFrame, const cv::Mat& gradMagnMapX, const cv::Mat& gradMagnMapY)
 {
+	int kernelSize = 5;
 	std::vector<PBASFeature> result;
 	cv::Mat tmp(1, 1, CV_8UC3);
+	
+	cv::Mat avgKernel = cv::Mat::ones(kernelSize, kernelSize, CV_32F) / (kernelSize * kernelSize);
+	cv::Mat avgMatB, avgMatG, avgMatR, smoothedInput;
+	cv::Mat channel[3];
+
+	
+	cv::GaussianBlur(inputFrame, smoothedInput, cv::Size(7, 7), 2, 2, cv::BORDER_DEFAULT);
+	cv::split(inputFrame, channel);
+
+
+	cv::filter2D(channel[0], avgMatB, CV_8U, avgKernel, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
+	cv::filter2D(channel[1], avgMatG, CV_8U, avgKernel, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
+	cv::filter2D(channel[2], avgMatR, CV_8U, avgKernel, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
+
 
 	for (int y = 0; y < inputFrame.rows; ++y)
 	{
@@ -106,7 +142,7 @@ std::vector<PBASFeature> PBASFeature::calcFeatureMap(const cv::Mat& inputFrame, 
 			tmp.ptr<uchar>(0)[1] = inputFrame.at<cv::Vec3b>(y, x)[1];
 			tmp.ptr<uchar>(0)[2] = inputFrame.at<cv::Vec3b>(y, x)[2];
 
-			result.push_back(PBASFeature(tmp, gradMagnMap.at<uchar>(y, x)));
+			result.push_back(PBASFeature(tmp, avgMatB.at<uchar>(y, x), avgMatG.at<uchar>(y, x), avgMatR.at<uchar>(y, x), gradMagnMapX.at<uchar>(y, x), gradMagnMapY.at<uchar>(y, x)));
 		}
 	}
 	return result;
@@ -119,7 +155,8 @@ float PBASFeature::calcMeanGradMagn(const std::vector<PBASFeature>& featureMap, 
 		for (int x = 0; x < width; ++x)
 		{
 
-			result += featureMap.at(y * width + x).m_gradMagnVal;
+			result += 0.5 * featureMap.at(y * width + x).m_gradX;
+			result += 0.5 * featureMap.at(y * width + x).m_gradY;
 		}
 	}
 	result /= (width * height);
@@ -142,7 +179,8 @@ const PBASFeature PBASFeature::operator- () const
 	result.m_B = -m_B;
 	result.m_G = -m_G;
 	result.m_R = -m_R;
-	result.m_gradMagnVal = -m_gradMagnVal;
+	result.m_gradX = -m_gradX;
+	result.m_gradY = -m_gradY;
 	return result;
 }
 PBASFeature& PBASFeature::operator+= (const PBASFeature& other)
@@ -150,7 +188,8 @@ PBASFeature& PBASFeature::operator+= (const PBASFeature& other)
 	m_B += other.m_B;
 	m_G += other.m_G;
 	m_R += other.m_R;
-	m_gradMagnVal += other.m_gradMagnVal;
+	m_gradX += other.m_gradX;
+	m_gradY += other.m_gradY;
 	return *this;
 }
 const PBASFeature PBASFeature::operator+ (const PBASFeature& other) const
@@ -181,7 +220,8 @@ PBASFeature& PBASFeature::operator*= (double scale)
 	m_B *= scale;
 	m_G *= scale;
 	m_R *= scale;
-	m_gradMagnVal *= scale;
+	m_gradX *= scale;
+	m_gradY *= scale;
 	return *this;
 }
 PBASFeature& PBASFeature::operator /= (double scaleFactor)
@@ -207,12 +247,24 @@ const float& PBASFeature::operator [] (int position) const
 	case 2:
 		return m_B;
 	case 3:
-		return m_gradMagnVal;
+		return 	m_gradX;
+	case 4:
+		return 	m_gradY;
 	}
 }
 
 PBASFeature::~PBASFeature()
 {
+
+}
+
+double PBASFeature::calcGradSimilarity(const PBASFeature& first, const PBASFeature& second)
+{
+
+	double result = 0.5 * std::abs(first.m_gradX - second.m_gradX) + 0.5 * std::abs(first.m_gradY - second.m_gradY);
+
+	return result;
+
 
 }
 

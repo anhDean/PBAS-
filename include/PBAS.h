@@ -23,6 +23,10 @@ private:
 	int m_runs = 0;						// iteration counter
 	int m_height, m_width;			// height, width of frame
 
+	float m_similarityThreshold = 6;
+	cv::Mat m_regionScale;
+	float m_regionScaleLowerBound, m_regionScaleUpperBound;
+
 	bool m_modelFilled = false;
 
 	// background model
@@ -133,6 +137,9 @@ void PBAS<Descriptor>::initialization(int N, double defaultR, int minHits, int d
 	m_defaultSubsampling = defaultSubsampling; // 
 
 
+	m_regionScaleLowerBound = 3.5;
+	m_regionScaleUpperBound = 7.5;
+
 											   //r-Thresh
 	m_RScale = RScale; // R_scale
 	m_RIncDec = RIncDec; // = R_inc/dec
@@ -195,6 +202,10 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 		m_minDistanceModel.resize(height * width);
 		m_staticBackgroundModel.resize(height * width);
 
+		m_regionScale.create(segMap.size(), CV_32F);
+		m_regionScale.setTo(cv::Scalar(6.0));
+		
+
 		m_sumMinDistMap.create(segMap.size(), CV_32F);
 		m_sumMinDistMap.setTo(cv::Scalar(0.0));
 
@@ -239,49 +250,61 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 
 				if (count >= m_minHits) // case background
 				{
-					//set pixel to background value
-					segMap.at<uchar>(y, x) = BACKGROUND_VAL;
-
-					entry = m_randomGenerator.uniform(5, NUM_RANDOMGENERATION - 5);
-					// Update current pixel
-					// get random number between 0 and nrSubsampling-1
-					int rand = 0;
-					int updateCoeff = m_randomGenerator.uniform(0, (int)ceil(m_subSamplingMap.at<float>(y, x))); // 0 - 16
-
-
-
-					if (m_minDistanceModel.at(y * m_width + x).size() < m_N)
+					if (Descriptor::calcGradSimilarity(m_backgroundModel.at(y * m_width + x)[index], featureMap[y * m_width + x]) < m_regionScale.at<float>(y,x) * m_defaultR)
 					{
-						m_minDistanceModel.at(y * m_width + x).push_back(minDist);
+
+
+						//set pixel to background value
+						segMap.at<uchar>(y, x) = BACKGROUND_VAL;
+
+						entry = m_randomGenerator.uniform(5, NUM_RANDOMGENERATION - 5);
+						// Update current pixel
+						// get random number between 0 and nrSubsampling-1
+						int rand = 0;
+						int updateCoeff = m_randomGenerator.uniform(0, (int)ceil(m_subSamplingMap.at<float>(y, x))); // 0 - 16
+
+
+
+						if (m_minDistanceModel.at(y * m_width + x).size() < m_N)
+						{
+							m_minDistanceModel.at(y * m_width + x).push_back(minDist);
+						}
+
+						if (updateCoeff < 1)// random subsampling, p(x) = 1/T
+						{
+							// replace randomly chosen sample
+							rand = m_randomN.at(entry + 1);
+							m_backgroundModel[y * m_width + x].at(rand) = featureMap[y * m_width + x];
+
+							// replace sum distance model at pixel y,x
+							rand = cv::saturate_cast<uchar>(m_randomGenerator.uniform(0, m_minDistanceModel.at(y * m_width + x).size() - 1));
+							formerDistanceBack = m_minDistanceModel.at(y * m_width + x)[rand]; // save old dmin
+							m_minDistanceModel.at(y * m_width + x)[rand] = minDist; // replace old entry with new dmin 
+						}
+
+						// Update neighboring background model
+						updateCoeff = m_randomGenerator.uniform(0, (int)ceil(m_subSamplingMap.at<float>(y, x)));
+						if (updateCoeff < 1)// random subsampling
+						{
+							//choose neighboring pixel randomly
+							xNeigh = m_randomX.at(entry) + x;
+							yNeigh = m_randomY.at(entry) + y;
+							checkValid(xNeigh, yNeigh);
+
+							// replace randomly chosen sample
+							rand = m_randomN.at(entry - 1);
+							m_backgroundModel.at(yNeigh * m_width + xNeigh)[rand] = featureMap[y * m_width + x];
+						}
+
+						m_sumMinDistMap.at<float>(y, x) = cv::saturate_cast<float>(minDist - formerDistanceBack + m_sumMinDistMap.at<float>(y, x));
+
 					}
 
-					if (updateCoeff < 1)// random subsampling, p(x) = 1/T
+					else
 					{
-						// replace randomly chosen sample
-						rand = m_randomN.at(entry + 1);
-						m_backgroundModel[y * m_width + x].at(rand)= featureMap[y * m_width + x];
-
-						// replace sum distance model at pixel y,x
-						rand = cv::saturate_cast<uchar>(m_randomGenerator.uniform(0, m_minDistanceModel.at(y * m_width + x).size() - 1));
-						formerDistanceBack = m_minDistanceModel.at(y * m_width + x)[rand]; // save old dmin
-						m_minDistanceModel.at(y * m_width + x)[rand] = minDist; // replace old entry with new dmin 
+						segMap.at<uchar>(y, x) = FOREGROUND_VAL;
 					}
-
-					// Update neighboring background model
-					updateCoeff = m_randomGenerator.uniform(0, (int)ceil(m_subSamplingMap.at<float>(y, x)));
-					if (updateCoeff < 1)// random subsampling
-					{
-						//choose neighboring pixel randomly
-						xNeigh = m_randomX.at(entry) + x;
-						yNeigh = m_randomY.at(entry) + y;
-						checkValid(xNeigh, yNeigh);
-
-						// replace randomly chosen sample
-						rand = m_randomN.at(entry - 1);
-						m_backgroundModel.at(yNeigh * m_width + xNeigh)[rand] = featureMap[y * m_width + x];
-					}
-
-					m_sumMinDistMap.at<float>(y, x) = cv::saturate_cast<float>(minDist - formerDistanceBack + m_sumMinDistMap.at<float>(y, x));
+					
 				}
 
 				else
@@ -362,15 +385,24 @@ bool PBAS<Descriptor>::process(const std::vector<Descriptor>& featureMap, int he
 
 				if (count >= m_minHits) // case background
 				{
-					//set pixel to background value
-					segMap.at<uchar>(y, x) = BACKGROUND_VAL;
-
-					if (m_minDistanceModel.at(y * m_width + x).size() < m_N)
+					
+					if (Descriptor::calcGradSimilarity(m_backgroundModel.at(y * m_width + x)[index], featureMap[y * m_width + x]) < m_regionScale.at<float>(y, x)* m_defaultR)
 					{
-						m_minDistanceModel.at(y * m_width + x).push_back(minDist);
-					}
 
-					m_sumMinDistMap.at<float>(y, x) = cv::saturate_cast<float>(minDist + m_sumMinDistMap.at<float>(y, x));
+						//set pixel to background value
+						segMap.at<uchar>(y, x) = BACKGROUND_VAL;
+
+						if (m_minDistanceModel.at(y * m_width + x).size() < m_N)
+						{
+							m_minDistanceModel.at(y * m_width + x).push_back(minDist);
+						}
+
+						m_sumMinDistMap.at<float>(y, x) = cv::saturate_cast<float>(minDist + m_sumMinDistMap.at<float>(y, x));
+					}
+					else
+					{
+						segMap.at<uchar>(y, x) = FOREGROUND_VAL;
+					}
 				}
 
 				else
@@ -430,10 +462,13 @@ void PBAS<Descriptor>::updateRThresholdXY(int x, int y, float avg_dmin) {
 	if (m_RMap.at<float>(y, x) <= avg_dmin * m_RScale)
 	{
 		m_RMap.at<float>(y, x) *= (1 + m_RIncDec);
+
+		m_regionScale.at<float>(y, x) *= (1 + 0.01);
 	}
 	else
 	{
 		m_RMap.at<float>(y, x) *= (1 - m_RIncDec);
+		m_regionScale.at<float>(y, x) *= (1 - 0.01);
 
 	}
 	if (m_RMap.at<float>(y, x) < m_defaultR)
@@ -441,6 +476,15 @@ void PBAS<Descriptor>::updateRThresholdXY(int x, int y, float avg_dmin) {
 	
 	if (m_RMap.at<float>(y, x) > 2.5 * m_defaultR)
 		m_RMap.at<float>(y, x) = 2.5 * m_defaultR;
+
+	if (m_regionScale.at<float>(y, x) < m_regionScaleLowerBound)
+		m_regionScale.at<float>(y, x) = m_regionScaleLowerBound;
+
+	if (m_regionScale.at<float>(y, x) > m_regionScaleUpperBound)
+		m_regionScale.at<float>(y, x) = m_regionScaleUpperBound;
+
+
+
 
 }
 
@@ -505,7 +549,7 @@ void PBAS<Descriptor>::reset()
 	m_isInitialized = false;
 	m_bgFilled.release();
 	m_staticBackgroundModel.clear();
-
+	m_regionScale.release();
 
 	createRandomNumberArray();
 	m_backgroundModel.clear();
@@ -620,6 +664,7 @@ cv::Mat PBAS<Descriptor>::drawBgSample()
 	channels.push_back(r);
 
 	cv::merge(channels, result);
+	cv::medianBlur(result, result, 3);
 	return result;
 
 }
