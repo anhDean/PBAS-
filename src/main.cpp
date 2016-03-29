@@ -30,10 +30,10 @@
 #define LOG_MESSAGE(x)
 #endif
 
-#define _DATASET
+//#define _DATASET
 //#define _FOLDER
 //#define _CAMERA
-//#define _PROTOTYPING1
+#define _PROTOTYPING1
 //#define _PROTOTYPING2
 
 int main(int argc, char** argv)
@@ -169,8 +169,8 @@ int main(int argc, char** argv)
 
 		PBASFrameProcessor *processor = new PBASFrameProcessor(N, defaultR, minHits, defaultSubsampling, alpha, beta, RScale, RIncDec, subsamplingIncRate, subsamplingDecRate, subsamplingLowerBound, subsamplingUpperBound);
 	
-		std::string inputFolder = "E:\\Datasets\\datasets2012\\dataset\\intermittentObjectMotion\\abandonedBox\\input";
-		int offset = 1700;
+		std::string inputFolder = "E:\\Datasets\\datasets2014\\dataset\\baseline\\pedestrians\\input";
+		int offset = 0;
 		for (int i = 0; i < 3000 - 1; ++i)
 		{	
 			std::stringstream ss1, ss2;
@@ -178,13 +178,16 @@ int main(int argc, char** argv)
 			ss1 << inputFolder << "\\in" << std::setw(6) << std::setfill('0') << i + 1 + offset << std::setfill(' ') << ".jpg";
 			img = cv::imread(ss1.str());
 
+
 			processor->process(img, result);
 			cv::imshow("result", result);
 			cv::imshow("raw result", processor->getRawOutput());
 			cv::imshow("input", img);
-			cv::imshow("bg_sample", processor->drawBgSample());
+			cv::imshow("noise map", processor->getNoiseMap());
+			cv::imshow("bg sample", processor->drawBgSample());
 			if(processor->getOutputWithBb().data != NULL)
-				cv::imshow("input with Bb", processor->getOutputWithBb());
+				cv::imshow("out bb", processor->getOutputWithBb());
+
 			cv::waitKey(1);
 
 		}
@@ -203,26 +206,25 @@ int main(int argc, char** argv)
 		cvtColor(img, src_gray, CV_BGR2GRAY);
 
 
-		processor->process(img, result);
-		Mat canny_output;
-		std::vector<std::vector<Point> > contours, contours2;
-		std::vector<Vec4i> hierarchy, hierarchy2;
+		cv::Mat sobelX, sobelY, inputGray, gradMagnMap;
 
-		int thresh = 200;
-		/// Detect edges using canny
+		cv::GaussianBlur(img, inputGray, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+		cv::cvtColor(inputGray, inputGray, CV_BGR2GRAY);
+		/// Gradient X
+		//Scharr( src_gray, grad_x, ddepth, 1, 0, scale, delta, BORDER_DEFAULT );
+		Sobel(inputGray, sobelX, CV_16S, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT);
 
-		/// Find contours
-		Rect x(20, 20, 50, 50);
+		/// Gradient Y
+		//Scharr( src_gray, grad_y, ddepth, 0, 1, scale, delta, BORDER_DEFAULT );
+		Sobel(inputGray, sobelY, CV_16S, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT);
+		convertScaleAbs(sobelX, sobelX);
+		convertScaleAbs(sobelY, sobelY);
 
-		
 
-		namedWindow("Contours", CV_WINDOW_AUTOSIZE);
-		namedWindow("highway", CV_WINDOW_AUTOSIZE);
-		imshow("Contours", MotionDetector::drawContours(img));
-		imshow("highway", img(x));
-		imshow("gradMagn", processor->getGradMagnMap());
-		std::cout << img(x).cols << " " << img(x).rows << std::endl;
+		imshow("sobel x", sobelX);
+		imshow("sobel y", sobelY);
 		waitKey(0);
+
 
 #endif
 
